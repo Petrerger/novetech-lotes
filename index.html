@@ -1,0 +1,2364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Monitoramento PEC</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        display: flex;
+      }
+      .sidebar {
+        width: 200px;
+        background: #007bff;
+        padding: 20px;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        overflow-y: auto;
+      }
+      .sidebar h3 {
+        margin-bottom: 20px;
+      }
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+      .sidebar ul li {
+        margin: 10px 0;
+        cursor: pointer;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 5px;
+        text-align: center;
+      }
+      .sidebar ul li:hover {
+        background: rgba(255, 255, 255, 0.4);
+      }
+      .content {
+        margin-left: 220px;
+        padding: 20px;
+        text-align: center;
+        width: calc(100% - 220px);
+      }
+      h2 {
+        color: #333;
+      }
+      table {
+        width: 70%;
+        margin: auto;
+        border-collapse: collapse;
+        background: #fff;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: center;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      td {
+        border-bottom: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h3>Cidades</h3>
+      <ul>
+        <li onclick="carregarCidade('Alhandra')">Alhandra</li>
+        <li onclick="carregarCidade('Alto Do Rodrigues')">Alto Do Rodrigues</li>
+        <li onclick="carregarCidade('Apodi')">Apodi</li>
+        <li onclick="carregarCidade('Areia')">Areia</li>
+        <li onclick="carregarCidade('Assu')">Assu</li>
+        <li onclick="carregarCidade('Brumado')">Brumado</li>
+        <li onclick="carregarCidade('Caapora')">Caapora</li>
+        <li onclick="carregarCidade('Caldas Brandão')">Caldas Brandão</li>
+        <li onclick="carregarCidade('Conde')">Conde</li>
+        <li onclick="carregarCidade('Cordeiro')">Cordeiro</li>
+        <li onclick="carregarCidade('Guarabira')">Guarabira</li>
+        <li onclick="carregarCidade('Itabaiana')">Itabaiana</li>
+        <li onclick="carregarCidade('Itapororoca')">Itapororoca</li>
+        <li onclick="carregarCidade('Itatuba')">Itatuba</li>
+        <li onclick="carregarCidade('Macaiba')">Macaiba</li>
+        <li onclick="carregarCidade('Mogeiro')">Mogeiro</li>
+        <li onclick="carregarCidade('Pedro Avelino')">Pedro Avelino</li>
+        <li onclick="carregarCidade('Pendencias')">Pendencias</li>
+        <li onclick="carregarCidade('Pitimbu')">Pitimbu</li>
+        <li onclick="carregarCidade('Poco Branco')">Poco Branco</li>
+        <li onclick="carregarCidade('Santa Rita')">Santa Rita</li>
+        <li onclick="carregarCidade('São José de Ubá')">São José de Ubá</li>
+        <li onclick="carregarCidade('Tibau')">Tibau</li>
+        <li onclick="carregarCidade('Valença')">Valença</li>
+        <li onclick="carregarCidade('Viçosa')">Viçosa</li>
+      </ul>
+    </div>
+    <div class="content">
+      <h2 id="cidadeTitulo"></h2>
+      <table>
+        <tr>
+          <th>Unidade</th>
+          <th>Lotes</th>
+          <th>Atendsaúde</th>
+          <th>PEC</th>
+          <th>Status</th>
+          <th>Último Envio</th>
+        </tr>
+        <tbody id="tabelaCorpo"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const cidades = {
+        "Caldas Brandão": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "PSF 1",
+              lotes: 193,
+              atendsaude: 1031,
+              pec: 1031,
+              envio: "08/07/2025 API",
+            },
+            {
+              unidade: "PSF 2",
+              lotes: 192,
+              atendsaude: 828,
+              pec: 828,
+              envio: "08/07/2025 API",
+            },
+            {
+              unidade: "PSF 3",
+              lotes: 191,
+              atendsaude: 220,
+              pec: 220,
+              envio: "08/07/2025 API",
+            },
+          ],
+        },
+        "Itatuba": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "USF 1 SEVERINA MOREIRA",
+              lotes: 621,
+              atendsaude: 255,
+              pec: 255,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF 2",
+              lotes: 620,
+              atendsaude: 141,
+              pec: 141,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF 3 MARIA LUCIENE",
+              lotes: 619,
+              atendsaude: 127,
+              pec: 127,
+              envio: "03/07/2025 API ",
+            },
+            {
+              unidade: "USF 4",
+              lotes: 618,
+              atendsaude: 135,
+              pec: 135,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF 5",
+              lotes: 617,
+              atendsaude: 121,
+              pec: 121,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF 6",
+              lotes: 616,
+              atendsaude: 159,
+              pec: 159,
+              envio: "03/07/2025 API",
+            },
+          ],
+        },
+        "Valença": {
+          versao: "5.3.33",
+          unidades: [
+            {
+              unidade: "UBS QUIRINO",
+              lotes: 1122,
+              atendsaude: 557,
+              pec: 557,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS PASSAGEM",
+              lotes: 1121,
+              atendsaude: 172,
+              pec: 172,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS LARANJEIRAS",
+              lotes: 1120,
+              atendsaude: 0,
+              pec: 0,
+              envio: "29/06/2025 API ⚠️",
+            },
+            {
+              unidade: "UBS CHACRINHA",
+              lotes: 1119,
+              atendsaude: 817,
+              pec: 817,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CANTEIRO",
+              lotes: 1118,
+              atendsaude: 419,
+              pec: 419, 
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF VARGINHA	",
+              lotes: 1117,
+              atendsaude: 3151,
+              pec: 3151,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF SPALLA II",
+              lotes: 1116,
+              atendsaude: 1608,
+              pec: 1608,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF SAO JOSE DAS PALMEIRAS",
+              lotes: 1115,
+              atendsaude: 2009,
+              pec: 2009,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF SAO FRANCISCO",
+              lotes: 1114,
+              atendsaude: 1393,
+              pec: 1393,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF SANTA ISABEL",
+              lotes: 1113,
+              atendsaude: 1019,
+              pec: 1019, 
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF PENTAGNA",
+              lotes: 1112,
+              atendsaude: 534,
+              pec: 534,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF PARQUE PENTAGNA",
+              lotes: 1111,
+              atendsaude: 2668,
+              pec: 2668,
+              envio: "02/07/2025 dev_90v3"
+            },
+            {
+              unidade: "ESF PARAPEUNA",
+              lotes: 1110,
+              atendsaude: 1199,
+              pec: 1199,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF OSORIO",
+              lotes: 1109,
+              atendsaude: 2567,
+              pec: 2567,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF JUPARANA CENTRO",
+              lotes: 1108,
+              atendsaude: 855,
+              pec: 855,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF JUPARANA",
+              lotes: 1107,
+              atendsaude: 1125,
+              pec: 1125,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF JOAO DIAS	",
+              lotes: 1106,
+              atendsaude: 1725,
+              pec: 1725,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF JOAO BONITO",
+              lotes: 1105,
+              atendsaude: 4059,
+              pec: 4059,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF JARDIM VALENCA",
+              lotes: 1104,
+              atendsaude: 1899,
+              pec: 1899,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF HILDEBRANDO LOPES",
+              lotes: 1103,
+              atendsaude: 1528,
+              pec: 1528,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF CONSERVATORIA",
+              lotes: 1102,
+              atendsaude: 2246,
+              pec: 2246,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF CENTRO",
+              lotes: 1101,
+              atendsaude: 1741,
+              pec: 1731,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "ESF CAMBOTA",
+              lotes: 1100,
+              atendsaude: 3285,
+              pec: 3285,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF BIQUINHA",
+              lotes: 1099,
+              atendsaude: 1670,
+              pec: 1670,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF BARROSO	",
+              lotes: 1098,
+              atendsaude: 2786,
+              pec: 2786,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "ESF BAIRRO DE FATIMA",
+              lotes: 1097,
+              atendsaude: 1942,
+              pec: 1942,
+              envio: "02/07/2025 dev_90v3",
+            },
+          ],
+        },
+        "Cordeiro": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "PSF SAO LUIZ",
+              lotes: 396,
+              atendsaude: 1888,
+              pec: 1888,
+              envio: "08/07/2025 API "
+            },
+            {
+              unidade: "PSF RETIRO POETICO",
+              lotes: 395,
+              atendsaude: 1941,
+              pec: 1941,
+              envio: "08/07/2025 API",
+            },
+            {
+              unidade: "PSF MANANCIAL",
+              lotes: 394,
+              atendsaude: 441,
+              pec: 441,
+              envio: "08/07/2025 API ",
+            },
+            {
+              unidade: "PSF LAVRINHAS",
+              lotes: 393,
+              atendsaude: 580,
+              pec: 580,
+              envio: "08/07/2025 API ",
+            },
+            {
+              unidade: "PSF CENTRO	",
+              lotes: 392,
+              atendsaude: 983,
+              pec: 983,
+              envio: "08/07/2025 API ",
+            },
+            {
+              unidade: "ESF RODOLFO",
+              lotes: 391,
+              atendsaude: 1002,
+              pec: 1002,
+              envio: "08/07/2025 API",
+            },
+          ],
+        },
+        "Pedro Avelino": {
+          versao: "5.3.28",
+          unidades: [
+            {
+              unidade: "UNIDADE BASICA DE SAUDE JOSE MARTINS",
+              lotes: 171,
+              atendsaude: 771,
+              pec: 771,
+              envio: "03/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UNID BASICA ZELITO CALACA",
+              lotes: 170,
+              atendsaude: 1636,
+              pec: 1636,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE BAIXA DO MEIO",
+              lotes: 169,
+              atendsaude: 625,
+              pec: 625,
+              envio: "03/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "CENTRO DE SAUDE",
+              lotes: 168,
+              atendsaude: 953,
+              pec: 953,
+              envio: "03/07/2025 dev_90v3",
+            },
+          ],
+        },
+       "Assu": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UNIDADE DE SAUDE OSMAR BATISTA DA SILVA",
+              lotes: 1209,
+              atendsaude: 917,
+              pec: 917,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS SEVERINO MAIA",
+              lotes: 1208,
+              atendsaude: 684,
+              pec: 684,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS ROBERIO ROBERTO BEZERRA",
+              lotes: 1207,
+              atendsaude: 1013,
+              pec: 1013,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS PANON II",
+              lotes: 1206,
+              atendsaude: 856,
+              pec: 856,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS ORTENCIO FERREIRA LIMA	",
+              lotes: 1205,
+              atendsaude: 1086,
+              pec: 1086,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS OFELIA WANDERLEY RODRIGUES",
+              lotes: 1204,
+              atendsaude: 1942,
+              pec: 1942,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS NOVA ESPERANCA	",
+              lotes: 1203,
+              atendsaude: 1026,
+              pec: 1026,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS MORADA NOVA	",
+              lotes: 1202,
+              atendsaude: 889,
+              pec: 889,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS MARIA DA PENHA",
+              lotes: 1201,
+              atendsaude: 787,
+              pec: 787,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS JOSE DINARTE SOARES",
+              lotes: 1200,
+              atendsaude: 1190,
+              pec: 1190,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS JOANA FLORENCIO",
+              lotes: 1199,
+              atendsaude: 306,
+              pec: 306,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS JANDUIS",
+              lotes: 1198,
+              atendsaude: 1140,
+              pec: 1140,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS DR FRANCISCO EVARISTO DE OLIVEIRA SALES",
+              lotes: 1197,
+              atendsaude: 675,
+              pec: 675,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS DO RIACHO",
+              lotes: 1196,
+              atendsaude: 353,
+              pec: 353, 
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS BELA VISTA PIATO",
+              lotes: 1195,
+              atendsaude: 540,
+              pec: 540,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "UBS ANTONIO CARLOS DANTAS DA SILVA",
+              lotes: 1194,
+              atendsaude: 651,
+              pec: 651,
+              envio: "07/07/2025dev_90v3",
+            },
+            {
+              unidade: "CENTRO DE REABILITACAO INTEGRADA",
+              lotes: 0,
+              atendsaude: 0,
+              pec: 0, //não sei
+              envio: "00/06/2025 API",
+            },
+          ],
+        },
+        "Tibau": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UBS ISABEL DE OLIVEIRA FERREIRA",
+              lotes: 0,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025",
+            },
+            {
+              unidade: "UNIDADE MARIA IRISMAR NOLASCO",
+              lotes: 225,
+              atendsaude: 188,
+              pec: 188,
+              envio: "03/07/2025 API ",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE TEREZINHA LIMA PESSOA",
+              lotes: 224,
+              atendsaude: 123,
+              pec: 123,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE GERTRUDES FRANCISCA MONTE SILVA",
+              lotes: 0,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 API",
+            },
+          ],
+        },
+        "Macaiba": {
+          versao: "5.3.33",
+          unidades: [
+            {
+              unidade: "SAE DE MACAIBA",
+              lotes: 579,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 dev_90v3 ",
+            },
+            {
+              unidade: "E S F VILAR",
+              lotes: 578,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F VILA SAO JOSE",
+              lotes: 577,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F TRAIRAS",
+              lotes: 576,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "EE S F TAPARA",
+              lotes: 575,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 v",
+            },
+            {
+              unidade: "E S F RIACHO DO SANGUE ⚠️",
+              lotes: 574,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F POTENGI",
+              lotes: 573,
+              atendsaude: 0,
+              pec: 0, 
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F MORADA DA FE",
+              lotes: 572,
+              atendsaude: 0,
+              pec: 0, 
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F MANGABEIRA II",
+              lotes: 571,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3⚠️",
+            },
+            {
+              unidade: "E S F MANGABEIRA",
+              lotes: 570,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F LUIZ ANTONIO DA FONSECA",
+              lotes: 569,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F LOTEAMENTO ESPERANCA",
+              lotes: 568,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F LAGOA DOS CAVALOS",
+              lotes: 567,
+              atendsaude: 0,
+              pec: 0, 
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F LAGOA DO SITIO",
+              lotes: 566,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F JOSE COELHO",
+              lotes: 565,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F FERREIRO TORTO	",
+              lotes: 564,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F ELOI DE SOUZA",
+              lotes: 563,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F DE GUARAPES",
+              lotes: 562,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F DE CAPOEIRAS",
+              lotes: 561,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CANA BRAVA",
+              lotes: 560,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAMPO SANTO",
+              lotes: 559,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAMPO DAS MANGUEIRAS",
+              lotes: 558,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAMPO DA SANTA CRUZ",
+              lotes: 557,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAMPINAS	",
+              lotes: 556,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAMPESTRE",
+              lotes: 555,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F CAJAZEIRAS",
+              lotes: 554,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "E S F BELA VISTA",
+              lotes: 553,
+              atendsaude: 0,
+              pec: 0,
+              envio: "25/06/2025 dev_90v3 ⚠️",
+            },
+          ],
+        },
+        "Areia": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA DISTRITO SANTA MARIA",
+              lotes: 661,
+              atendsaude: 2585,
+              pec: 2585,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "PSF VI JUVENAL ESPINOLA",
+              lotes: 660,
+              atendsaude:1788,
+              pec: 1788,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "PSF IV JOSE GUEDES DA COSTA",
+              lotes: 659,
+              atendsaude: 2768,
+              pec: 2768,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "PSF DE MATA LIMPA",
+              lotes: 658,
+              atendsaude: 4489,
+              pec: 4489,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE DR MORAES DE GALVAO PSF III",
+              lotes: 657,
+              atendsaude: 1349,
+              pec: 1349,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "JOSE PAULINO DA SILVA ESF VII",
+              lotes: 656,
+              atendsaude: 1495,
+              pec: 1495,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "JOSE EVARISTO DA SILVA ESF VIII",
+              lotes: 655,
+              atendsaude: 800,
+              pec: 800,
+              envio: "03/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "ESF XI VEREADOR JOSEILTON SILVA",
+              lotes: 654,
+              atendsaude: 0,
+              pec: 0,
+              envio: "30/06/2025 enviado dev_90v3 ⚠️",
+            },
+            {
+              unidade: "ESF X MARIA DAS DORES MONTEIRO BARACHO MUTIRAO",
+              lotes: 653,
+              atendsaude: 1714,
+              pec: 1714,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "ESF IX FRANCISCO DE ASSIS GONDIM DISTRITO DE MUQUEM",
+              lotes: 652,
+              atendsaude: 1879,
+              pec: 1879,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "ANTONIO TRAJANO DOS SANTOS",
+              lotes: 651,
+              atendsaude: 2931,
+              pec: 2931,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+          ],
+        },
+        "Viçosa": {
+          versao: "5.3.33",
+          unidades: [
+            {
+              unidade:
+                "UNIDADE SAUDE DA FAMILIA STA CLARA BETANIA JK M EUGENIA",
+              lotes: 287,
+              atendsaude: 3303,
+              pec: 3303,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA SILVESTRE",
+              lotes: 286,
+              atendsaude: 2491,
+              pec: 2491,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade:
+                "UNIDADE SAUDE DA FAMILIA SAO SEBASTIAO UNIAO VALE DO SOL",
+              lotes: 285,
+              atendsaude: 1848,
+              pec: 1848,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA SAO JOSE DO TRIUNFO",
+              lotes: 284,
+              atendsaude: 1220,
+              pec: 1220,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA SAO JOSE CIDADE NOVA BARRINHA",
+              lotes: 283,
+              atendsaude: 2893,
+              pec: 2893,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA SANTO ANTONIO II",
+              lotes: 282,
+              atendsaude: 2183,
+              pec: 2183,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA SANTO ANTONIO",
+              lotes: 281,
+              atendsaude: 2155,//off
+              pec: 2155,
+              envio: "02/07/2025 enviado dev_90v3",//off
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA NOVO SILVESTRE",
+              lotes: 280,
+              atendsaude: 1527,
+              pec: 1527,
+              envio: "02/07/2025 enviado dev_90v3 ",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA NOVA VICOSA POSSES",
+              lotes: 279,
+              atendsaude: 3697,
+              pec: 3697,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA NOVA ERA INACIO MARTINS",
+              lotes: 278,
+              atendsaude: 1417,
+              pec: 1417,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA JOAO BRAS",
+              lotes: 277,
+              atendsaude: 1816,
+              pec: 1816,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA FRANCISCO DE PAULA OLIVEIRA",
+              lotes: 276,
+              atendsaude: 1450,
+              pec: 1450,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA BOM JESUS",
+              lotes: 275,
+              atendsaude: 3660,
+              pec: 3660,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE SAUDE DA FAMILIA AMORAS",
+              lotes: 274,
+              atendsaude: 1355,
+              pec: 1355,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "POLICLINICA DE VICOSA",
+              lotes: 273,
+              atendsaude: 809,
+              pec: 809,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+          ],
+        },
+        "Guarabira": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UBS TANANDUBA DR ODACI S ROCHA",
+              lotes: 381,
+              atendsaude: 716,
+              pec: 716, 
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS SAO JOSE DR MILTON DE MOURA RESENDE",
+              lotes: 380,
+              atendsaude: 1505,
+              pec: 1505,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS SANTA TEREZINHA DR JOAO SOARES",
+              lotes: 379,
+              atendsaude: 1359,
+              pec: 1359,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS ROSARIO AMORIM DA COSTA ROSARIO",
+              lotes: 378,
+              atendsaude: 1015,
+              pec:1015,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UBS PRIMAVERA JOSEFA TOMAZ DE ARRUDA",
+              lotes: 377,
+              atendsaude: 2476,
+              pec: 2476,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS PIRPIRI",
+              lotes: 376,
+              atendsaude: 1655,
+              pec: 1655,
+              envio: "02/06/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NORDESTE III",
+              lotes: 375,
+              atendsaude: 1924,
+              pec: 1924,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NORDESTE II FRANCISCO ARAUJO DO NASCIMENTO FILHO",
+              lotes: 374,
+              atendsaude: 839,
+              pec: 839,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NORDESTE I DR OSVALDO AZEVEDO",
+              lotes: 373,
+              atendsaude: 839,
+              pec: 6554,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NACOES",
+              lotes: 372,
+              atendsaude: 1666,
+              pec: 1666,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UBS MUTIRAO IRMA MARIA ALVES DE ALMEIDA",
+              lotes: 371,
+              atendsaude: 406,
+              pec: 406,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS JUA APARECIDA",
+              lotes: 370,
+              atendsaude: 1268,
+              pec: 1268,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CORDEIRO JOSE NICOLAU PESSOA",
+              lotes: 369,
+              atendsaude: 1127,
+              pec: 1127,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CONTENDAS ANTONIO C BARBOSA",
+              lotes: 368,
+              atendsaude: 1535,
+              pec: 1535,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CLOVIS BEZERRA NANA PORPINO",
+              lotes: 367,
+              atendsaude: 225,
+              pec: 225,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CACHOEIRA DR ARISTIDES VILLAR",
+              lotes: 366,
+              atendsaude: 624,
+              pec: 624,
+              envio: "03/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UBS BAIRRO NOVO LUIZ TOLENTINO DE ALUSTAU",
+              lotes: 365,
+              atendsaude: 1771,
+              pec: 1771,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS BAIRRO NOVO II",
+              lotes: 364,
+              atendsaude: 1376,
+              pec: 1376,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS ASSIS CHATEAUBRIAND ANSELMO DE ARAUJO ALEXANDREDA",
+              lotes: 363,
+              atendsaude: 360,
+              pec: 360,
+              envio: "03/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS ALTO DA BOA VISTA IRACEMA DA SILVA PONTES",
+              lotes: 362,
+              atendsaude: 1396,
+              pec: 1396,
+              envio: "03/07/2025 dev_90v3",
+            },
+          ],
+        },
+       "Conde": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UBS VILLAGE",
+              lotes: 344,
+              atendsaude: 1595,
+              pec: 1595,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS QUILOMBOLA DO GURUGI",
+              lotes: 343,
+              atendsaude: 2238,
+              pec: 2238,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS POUSADA DO CONDE",
+              lotes: 342,
+              atendsaude: 2048,
+              pec: 2048,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NOSSA SENHORA DAS NEVES",
+              lotes: 341,
+              atendsaude: 2769,
+              pec: 2769,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS NOSSA SENHORA DA CONCEICAO",
+              lotes: 340,
+              atendsaude: 775,
+              pec: 775,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS MITUACU",
+              lotes: 339,
+              atendsaude: 799,
+              pec: 799,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS MATA DA CHICA",
+              lotes: 338,
+              atendsaude: 1264,
+              pec: 1264,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS JOSE MANGUEIRA RAMALHO DR MANGUEIRA",
+              lotes: 337,
+              atendsaude: 667,
+              pec: 667,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS JACUMA",
+              lotes: 336,
+              atendsaude: 1138,
+              pec: 1138,
+              envio: "08/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UBS CENTRO",
+              lotes: 335,
+              atendsaude: 26,
+              pec: 26,
+              envio: "08/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS CARAPIBUS",
+              lotes: 334,
+              atendsaude: 5263,
+              pec: 5263,
+              envio: "08/07/2025 dev_90v3",
+            },
+          ],
+        },
+        "Alto Do Rodrigues": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA VII",
+              lotes: 425,
+              atendsaude: 0,
+              pec: 0,
+              envio: "26/06/2025 enviado Dev ⚠️",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA VI",
+              lotes: 424,
+              atendsaude: 1701,
+              pec: 1701,
+              envio: "07/07/2025 enviado Dev ",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA V",
+              lotes: 423,
+              atendsaude: 1302,
+              pec: 1302,
+              envio: "07/07/2025 enviado Dev ",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA IV",
+              lotes: 422,
+              atendsaude: 355,
+              pec: 355,
+              envio: "07/07/2025 enviado Dev ",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA III",
+              lotes: 421,
+              atendsaude: 1101,
+              pec: 1101,
+              envio: "07/07/2025 enviado Dev ",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA II",
+              lotes: 420,
+              atendsaude: 898,
+              pec: 898,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DA FAMILIA I",
+              lotes: 419,
+              atendsaude: 650,
+              pec: 650,
+              envio: "07/07/2025 enviado Dev",
+            },
+          ],
+        },
+        "Mogeiro": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "USF VI FRANCISCO CANDIDO DA SILVA",
+              lotes: 443,
+              atendsaude: 245,
+              pec: 245,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF V JOSE PINTO DA SILVA",
+              lotes: 442,
+              atendsaude: 252,
+              pec: 252, 
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF IV JOSEFA VICENCIA DA CONCEICAO",
+              lotes: 441,
+              atendsaude: 80,
+              pec: 80,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF III MARIA DO SOCORRO DA SILVA",
+              lotes: 440,
+              atendsaude: 226,
+              pec: 226,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF II TEREZINHA BENICIO DA COSTA",
+              lotes: 439,
+              atendsaude: 361,
+              pec: 361,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF I MARIA DA GLORIA ALVES DA SILVA",
+              lotes: 438,
+              atendsaude: 256,
+              pec: 256,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "USF 7 SITIO CABRAL",
+              lotes: 437,
+              atendsaude: 67,
+              pec: 67,
+              envio: "02/07/2025 API",
+            },
+          ],
+        },
+        "Itapororoca": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA SAO JOAO",
+              lotes: 821,
+              atendsaude: 815,
+              pec: 815,
+              envio: "03/07/2025 API ",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA ROSEIRA",
+              lotes: 820,
+              atendsaude: 1277,
+              pec: 1277,
+              envio: "03/07/2025 API ",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA IPIOCA DE BAIXO",
+              lotes: 819,
+              atendsaude: 264,
+              pec: 264,
+              envio: "03/07/2025 API ",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA CRUZEIRO",
+              lotes: 818,
+              atendsaude: 277,
+              pec: 277,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA CIPOAL",
+              lotes: 817,
+              atendsaude: 293,
+              pec: 293,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA CENTRO",
+              lotes: 816,
+              atendsaude: 2,
+              pec: 2,
+              envio: "03/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE DO TAMBOR",
+              lotes: 815,
+              atendsaude: 156,
+              pec: 156,
+              envio: "03/07/2025 API",
+            },
+          ],
+        },
+        "Pendencias": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UBS MARIA DAS DORES BARBOSA",
+              lotes: 338,
+              atendsaude: 188,
+              pec: 188,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UBS DIMAS MARTINS CABRAL",
+              lotes: 337,
+              atendsaude: 108,
+              pec: 108,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UBS DA FAMILIA LUZIA TORQUATO",
+              lotes: 336,
+              atendsaude: 79,
+              pec: 79,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "POSTO DE SAUDE VALDEMAR RODRIGUES DA SILVEIRA",
+              lotes: 335,
+              atendsaude: 220,
+              pec: 220,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "POSTO DE SAUDE FRANCISCO HERMOGENES DE MEDEIROS",
+              lotes: 334,
+              atendsaude: 149,
+              pec: 149,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "CENTRO DE SAUDE MANOEL MOREIRA DA SILVA",
+              lotes: 333,
+              atendsaude: 151,
+              pec: 151,
+              envio: "02/07/2025 API",
+            },
+          ],
+        },
+        "Apodi": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UNIDADE BASICA DE SAUDE SAO SEBASTIAO",
+              lotes: 727,
+              atendsaude: 3393,
+              pec: 3393,
+              envio: "07/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE DO IPE",
+              lotes: 726,
+              atendsaude: 3096,
+              pec: 3096,
+              envio: "07/06/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE DO CAIC",
+              lotes: 725,
+              atendsaude: 3338,
+              pec: 3338,
+              envio: "07/06/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE DO BACURAU I",
+              lotes: 724,
+              atendsaude: 1951,
+              pec: 1951,
+              envio: "07/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE DA COMUNIDADE BICO TORTO",
+              lotes: 723,
+              atendsaude: 1846,
+              pec: 1846,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBS GALDINO JULIAO DA MOTA",
+              lotes: 722,
+              atendsaude: 2064,
+              pec: 2064,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE SANTA ROSA",
+              lotes: 721,
+              atendsaude: 2631,
+              pec: 2631,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE MELANCIAS",
+              lotes: 720,
+              atendsaude: 798,
+              pec: 798,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE DO BAMBURRAL",
+              lotes: 719,
+              atendsaude: 934,
+              pec: 934,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE DE SOLEDADE",
+              lotes: 718,
+              atendsaude: 4943,
+              pec: 4943,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE DE GOES",
+              lotes: 717,
+              atendsaude: 577,
+              pec: 577,
+              envio: "07/07/2025 dev_90v3",
+            },
+            {
+              unidade: "POSTO DE SAUDE CORREGO",
+              lotes: 716,
+              atendsaude: 1464,
+              pec: 1464,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "CENTRO DE SAUDE DE APODI",
+              lotes: 715,
+              atendsaude: 5784,
+              pec: 5784,
+              envio: "07/07/2025 API",
+            },
+          ],
+        },
+        "Caapora": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "USF SAO PEDRO",
+              lotes: 64,
+              atendsaude: 848,
+              pec: 848,
+              envio: "07/07/2025 API ",
+            },
+            {
+              unidade: "USF RETIRADA",
+              lotes: 63,
+              atendsaude: 645,
+              pec: 645,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF PREFEITO AMARO JOSE",
+              lotes: 62,
+              atendsaude: 796,
+              pec: 796,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF PIQUETE",
+              lotes: 61,
+              atendsaude: 860,
+              pec: 860,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF PASTOR CRISPIM",
+              lotes: 60,
+              atendsaude: 334,
+              pec: 334,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF MANGABEIRA",
+              lotes: 59,
+              atendsaude: 865,
+              pec: 865,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF CUPISSURA I",
+              lotes: 58,
+              atendsaude: 524,
+              pec: 524,
+              envio: "07/07/2025 API",
+            },
+            {
+              unidade: "USF CENTRO II",
+              lotes: 57,
+              atendsaude: 1222,
+              pec: 1222,
+              envio: "08/07/2025 API",
+            },
+            {
+              unidade: "PSF CUPISSURA II",
+              lotes: 56,
+              atendsaude: 990,
+              pec: 990,
+              envio: "08/07/2025 API",
+            },
+          ],
+        },
+        "Poco Branco": {
+          versao: "5.3.31",
+          unidades: [
+             {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 6",
+              lotes: 409,
+              atendsaude: 145,
+              pec: 145,
+              envio: "02/07/2025 API "
+             },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 5",
+              lotes: 408,
+              atendsaude: 221,
+              pec: 221,
+              envio: "02/07/2025 API"
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 4",
+              lotes: 407,
+              atendsaude: 259,
+              pec: 259,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 3",
+              lotes: 406,
+              atendsaude: 44,
+              pec: 44,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 2",
+              lotes: 405,
+              atendsaude: 169,
+              pec: 169,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UNIDADE BASICA DE SAUDE UBS 1",
+              lotes: 404,
+              atendsaude: 34,
+              pec: 34,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "UBS BAIXOS DE SAO MIGUEL",
+              lotes: 403,
+              atendsaude: 33,
+              pec: 33,
+              envio: "02/07/2025 API",
+            },
+            {
+              unidade: "POSTO DE SAUDE SAMAMBAIA",
+              lotes: 402,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 ",
+            },
+          ],
+        },
+        "Santa Rita": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "UNIDADE DE PSF VIDAL DE NEGREIROS",
+              lotes: 2159,
+              atendsaude: 2556,
+              pec: 2556,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UNIDADE DE PSF USINA SAO JOAO",
+              lotes: 2158,
+              atendsaude: 684,
+              pec: 684,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF PREFEITO DR OILDO SOARES	",
+              lotes: 2157,
+              atendsaude: 2443,
+              pec: 2443,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF PEDRO CICERO BENICIO	",
+              lotes: 2156,
+              atendsaude: 3537,
+              pec: 3537,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF PADRE PAULO KOELLEN",
+              lotes: 2155,
+              atendsaude: 2975,
+              pec: 2975,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF PADRE MALAGRIDA I",
+              lotes: 2154,
+              atendsaude: 3223,
+              pec: 3223,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF ODON LEITE",
+              lotes: 2153,
+              atendsaude: 3837,
+              pec: 3837,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF MIRIRI",
+              lotes: 2152,
+              atendsaude: 1170,
+              pec: 1170,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF MAURICE VAN WOENSEL",
+              lotes: 2151,
+              atendsaude: 1006,
+              pec: 1006,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF MARIA DE LOURDES ALVES DE ASSIS",
+              lotes: 2150,
+              atendsaude: 2355,
+              pec: 2355,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF MARCOS MOURA III",
+              lotes: 2149,
+              atendsaude: 1821,
+              pec: 1821,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF MARCOS MOURA II",
+              lotes: 2148,
+              atendsaude: 4158,
+              pec: 4158,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF LIVRAMENTO",
+              lotes: 2147,
+              atendsaude: 3125,
+              pec: 3125,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF LEROLANDIA",
+              lotes: 2146,
+              atendsaude: 3690,
+              pec: 3690,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF JOSE VICENTE DE PONTES",
+              lotes: 2145,
+              atendsaude: 1477,
+              pec: 1477,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF JOSE ALVES VIEIRA",
+              lotes: 2144,
+              atendsaude: 3547,
+              pec: 3547,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF JOSE ALVES DE MELO",
+              lotes: 2143,
+              atendsaude: 1333,
+              pec: 1333,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF JOAQUIM FRANCISCO DE SOUZA",
+              lotes: 2142,
+              atendsaude: 0,
+              pec: 0,
+              envio: "21/05/2025 API ⚠️",
+            },
+            {
+              unidade: "UNIDADE DE PSF JOAO BATISTA DO NASCIMENTO",
+              lotes: 2141,
+              atendsaude: 4761,
+              pec: 4761,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF IZABEL SERRANO DA SILVA",
+              lotes: 2140,
+              atendsaude: 1774,
+              pec: 1774,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF IRMA CACILDA",
+              lotes: 2139,
+              atendsaude: 3183,
+              pec: 3183,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF HEITEL SANTIAGO",
+              lotes: 2138,
+              atendsaude: 4416,
+              pec: 4416,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FRANCISCA PANTA",
+              lotes: 2137,
+              atendsaude: 4453,
+              pec: 4453,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FRANCISCA MORAIS DE QUEIROGA",
+              lotes: 2136,
+              atendsaude: 2172,
+              pec: 2172,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FRANCISCA LIRA DE CARVALHO",
+              lotes: 2135,
+              atendsaude: 2760,
+              pec: 2760,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FORTE VELHORIBEIRA",
+              lotes: 2134,
+              atendsaude: 1173,
+              pec: 1173,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FLAVIO MAROJA",
+              lotes: 2133,
+              atendsaude: 1039,
+              pec: 1039,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF FARM ANTONIO AZEVEDO",
+              lotes: 2132,
+              atendsaude: 4880,
+              pec: 4880,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF ENF MARCIA VALERIA RODRIGUES",
+              lotes: 2131,
+              atendsaude: 2744,
+              pec: 2744,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF DR TEIXEIRA DE VASCONCELOS",
+              lotes: 2130,
+              atendsaude: 5233,
+              pec: 5233,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF DR ROMEU DE AZEVEDO MENEZES",
+              lotes: 2129,
+              atendsaude: 3563,
+              pec: 3563,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF DR DORIVALDO PEREIRA DA SILVA",
+              lotes: 2128,
+              atendsaude: 2819,
+              pec: 2819,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF DR CARLOS ANTONIO",
+              lotes: 2127,
+              atendsaude: 0,
+              pec: 0,
+              envio: "20/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "UNIDADE DE PSF DONA ZUZA ALVINO",
+              lotes: 2126,
+              atendsaude: 2824,
+              pec: 2824,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF CELIA SANTIAGO",
+              lotes: 2125,
+              atendsaude: 4213,
+              pec: 4213,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF CELESTE RIBEIRO",
+              lotes: 2124,
+              atendsaude: 4874,
+              pec: 4874,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF CARMEM LUCIA FIRMINO DA SILVA",
+              lotes: 2123,
+              atendsaude: 3782,
+              pec: 3782,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF BEBELANDIA",
+              lotes: 2122,
+              atendsaude: 1576,
+              pec: 1576,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF BARAO DO ABIAY",
+              lotes: 2121,
+              atendsaude: 891,
+              pec: 891,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF ANA VIRGINIA",
+              lotes: 2120,
+              atendsaude: 3526,
+              pec: 3526,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE PSF ALDENY MONTENEGRO",
+              lotes: 2119,
+              atendsaude: 2561,
+              pec: 2561,
+              envio: "02/07/2025 dev_90v3",
+            },
+          ],
+        },
+        "Itabaiana": {
+          versao: "5.3.31",
+          unidades: [
+            /*{
+              unidade: "POSTO DE SAUDE MANOEL DE MATOS",
+              lotes: 0,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 ",
+            },*/
+            {
+              unidade: "UBSF SUBURBANA",
+              lotes: 587,
+              atendsaude: 2608,
+              pec: 2608,
+              envio: "02/07/2025 dev_90v3 ",
+            },
+            {
+              unidade: "UBSF SITIO NOVO",
+              lotes: 586,
+              atendsaude: 706,
+              pec: 706,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF PAULO OUVIDIO DE LUCENA",
+              lotes: 585,
+              atendsaude: 1538,
+              pec: 1538,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF DE GUARITA",
+              lotes: 584,
+              atendsaude: 715,
+              pec: 715,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF DE BREJINHO",
+              lotes: 583,
+              atendsaude: 2834,
+              pec: 2834,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF COSTA E SILVA",
+              lotes: 582,
+              atendsaude: 2576,
+              pec: 2576,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF CASA DA MAE POBRE",
+              lotes: 581,
+              atendsaude: 1490,
+              pec: 1490,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF CAMPO GRANDE",
+              lotes: 580,
+              atendsaude: 1300,
+              pec: 1300,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF BOTAFOGO",
+              lotes: 579,
+              atendsaude: 1491,
+              pec: 1491,
+              envio: "02/07/2025 dev_90v3",
+            },
+            {
+              unidade: "UBSF ACUDE DAS PEDRAS",
+              lotes: 578,
+              atendsaude: 1071,
+              pec: 1071,
+              envio: "02/07/2025 dev_90v3",
+            },
+          ],
+        },
+       "Alhandra": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "POSTO ANCORA DE VIEIRA	",
+              lotes: 978,
+              atendsaude: 0,
+              pec: 0,
+              envio: "26/06/2025 enviado Dev ⚠️",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA SALGADINHO",
+              lotes: 986,
+              atendsaude: 426,
+              pec: 426,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA OITEIRO II",
+              lotes: 985,
+              atendsaude: 3584,
+              pec: 3584,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA NOVA ALHANDRA",
+              lotes: 984,
+              atendsaude: 1242,
+              pec: 1242,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA MATA REDONDA II",
+              lotes: 983,
+              atendsaude:3360,
+              pec: 3360,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA MATA REDONDA I",
+              lotes: 982,
+              atendsaude: 2321,
+              pec: 2321,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA DO ACAIS",
+              lotes: 981,
+              atendsaude: 2814,
+              pec: 2814,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA CENTRO II",
+              lotes: 980,
+              atendsaude: 975,
+              pec: 975,
+              envio: "07/07/2025 enviado Dev",
+            },
+            {
+              unidade: "UBS CENTRO ALHANDRA",
+              lotes: 979,
+              atendsaude: 1741,
+              pec: 1741,
+              envio: "07/07/2025 enviado Dev",
+            },
+            /*{
+              unidade: "CEO JOAQUINA FRANCISCA DO NASCIMENTO DONA QUINA",
+              lotes: 0,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 enviado Dev⚠️",
+            },*/
+            {
+              unidade: "CENTRO DE SAUDE DE ALHANDRA",
+              lotes: 976,
+              atendsaude: 3003,
+              pec: 3003,
+              envio: "07/07/2025 enviado Dev",
+            },
+          ],
+        },
+        "Brumado": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "USF VEREADOR SINVAL NEVES	",
+              lotes: 1424,
+              atendsaude: 1047,
+              pec: 1047,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF MARCIONILIO RODRIGUES DOS SANTOS",
+              lotes: 1423,
+              atendsaude: 0,
+              pec: 0,
+              envio: "17/06/2025 enviado dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF LIZIANE DOS SANTOS ALVES",
+              lotes: 1422,
+              atendsaude: 4104,
+              pec: 4104,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF LEOBINO JOSE DE SOUZA",
+              lotes: 1421	,
+              atendsaude: 1020,
+              pec: 1020,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF JOAQUIM DE CASTRO DONATO",
+              lotes: 1420,
+              atendsaude:1991,
+              pec: 1991,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF IVANEIDE DAS NEVES SANTOS TEIXEIRA",
+              lotes: 1419	,
+              atendsaude: 1574,
+              pec: 1574,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF FERNANDO LUIZ GONCALVES TRINDADE",
+              lotes: 1418,
+              atendsaude: 1919,
+              pec: 1919,
+              envio: "02/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF ENFERMEIRA KEILA FRANCIOLE LIMA ALVES TEIXEIRA",
+              lotes: 1417,
+              atendsaude: 2144,
+              pec: 2144,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "USF ALTINO ELIZEU DE SOUZA",
+              lotes: 1416,
+              atendsaude: 206,
+              pec: 206,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA WILSON TIBO",
+              lotes: 1415	,
+              atendsaude: 1122,
+              pec: 1122,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA RAIMUNDO FERNANDES",
+              lotes: 1414	,
+              atendsaude: 1624,
+              pec: 1624,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA JUVENCIO SOUZA LIMA",
+              lotes: 1413,
+              atendsaude: 1511,
+              pec: 1511,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA DR PAULO VARGAS",
+              lotes: 1412,
+              atendsaude: 1919,
+              pec: 1919,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA DR NEWTON ALVES DE CASTRO",
+              lotes: 1411,
+              atendsaude: 1928,
+              pec: 1928,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+            {
+              unidade: "UNIDADE DE SAUDE DA FAMILIA DR ARLINDO MAGNO STANCHI",
+              lotes: 1410,
+              atendsaude: 1619,
+              pec: 1619,
+              envio: "07/07/2025 enviado dev_90v3",
+            },
+          ],
+        },
+        "Pitimbu": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "USF TAQUARA	",
+              lotes: 9,
+              atendsaude: 1028,
+              pec: 1028,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF PITIMBU VILA",
+              lotes: 8,
+              atendsaude: 498,
+              pec: 498,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF PITIMBU GUARITA",
+              lotes: 7,
+              atendsaude: 956,
+              pec: 956,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF CAMUCIM",
+              lotes: 6,
+              atendsaude: 158,
+              pec: 158,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF APAZA",
+              lotes: 5,
+              atendsaude: 1546,
+              pec: 1546,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF ACAU MUCUIM",
+              lotes: 4,
+              atendsaude: 1648,
+              pec: 1648,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "USF ACAU COLONIA",
+              lotes: 3,
+              atendsaude: 252,
+              pec: 252,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "UBS COSMO VALDEVINO DOS SANTOS ANDREZA",
+              lotes: 2,
+              atendsaude: 803,
+              pec: 803,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+            {
+              unidade: "PSF PONTA DE COQUEIRO",
+              lotes: 1,
+              atendsaude: 623,
+              pec: 623,
+              envio: "13/06/2025 dev_90v3 ⚠️",
+            },
+          ],
+        },
+        "São José de Ubá": {
+          versao: "5.3.31",
+          unidades: [
+            {
+              unidade: "ESTRATEGIA DA SAUDE DA FAMILIA ESF WASHINGTON BISMARCK NEY	",
+              lotes: 377,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 ",
+            },
+            {
+              unidade: "ESTRATEGIA DA SAUDE DA FAMILIA ESF DR EVERARDO TRAVASSOS",
+              lotes: 376,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 A",
+            },
+            {
+              unidade: "ESTRATEGIA DA SAUDE DA FAMILIA ESF ANTONIO MORAES FILHO",
+              lotes: 375,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025 ",
+            },
+            {
+              unidade: "ESTRATEGIA DA SAUDE DA FAMILIA ANALIA FIQUEIRA LESSA",
+              lotes: 374,
+              atendsaude: 0,
+              pec: 0,
+              envio: "00/00/2025",
+            },
+          ],
+        },
+      };
+
+      function carregarCidade(cidade) {
+        document.getElementById(
+          "cidadeTitulo"
+        ).innerText = `${cidade} - PEC ${cidades[cidade].versao}`;
+        const tabelaCorpo = document.getElementById("tabelaCorpo");
+        tabelaCorpo.innerHTML = "";
+        cidades[cidade].unidades.forEach((dado) => {
+          let linha = `<tr>
+                    <td>${dado.unidade}</td>
+                    <td>${dado.lotes}</td>
+                    <td>${dado.atendsaude}</td>
+                    <td>${dado.pec}</td>
+                    <td>${dado.atendsaude === dado.pec ? "✅" : "❌"}</td>
+                    <td>${dado.envio}</td>
+                </tr>`;
+          tabelaCorpo.innerHTML += linha;
+        });
+      }
+      carregarCidade("Caldas Brandão");
+    </script>
+  </body>
+</html>
