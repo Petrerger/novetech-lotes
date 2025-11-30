@@ -1,1091 +1,243 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Novetech • Monitoramento de Lotes (e-SUS PEC) v3.1</title>
-  <meta name="description" content="Painel de monitoramento de lotes com detalhamento por unidades e KPIs contextuais — Novetech" />
-  <style>
-    :root{
-      --bg: #0b1020;
-      --panel: rgba(255,255,255,0.06);
-      --panel-2: rgba(255,255,255,0.08);
-      --accent: #38b6ff;
-      --accent-2: #5eead4;
-      --text: #e6f1ff;
-      --muted: #a3b3c2;
-      --good: #16a34a;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --border: rgba(255,255,255,0.08);
-      --shadow: 0 10px 30px rgba(0,0,0,.45);
-      --shadow-soft: 0 6px 20px rgba(0,0,0,.25);
-      --radius: 14px;
-      --radius-sm: 10px;
-    }
-    *{ box-sizing: border-box }
-    html, body{ height: 100% }
-    body{
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Helvetica Neue", "Noto Sans";
-      background: radial-gradient(1200px 600px at 10% -20%, rgba(56,182,255,.15), transparent),
-                  radial-gradient(1000px 700px at 90% 0%, rgba(94,234,212,.15), transparent),
-                  var(--bg);
-      color: var(--text);
-      line-height: 1.45;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    a{ color: var(--accent) }
-    .container{ width: min(1200px, 92vw); margin: 28px auto 60px; }
-    header{ display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
-    .brand{ display: flex; align-items: center; gap: 14px; }
-    .logo{ width:42px; height:42px; border-radius:10px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: var(--shadow-soft); position:relative }
-    .logo:after{ content:"N"; position:absolute; inset:0; display:grid; place-items:center; color:#0b1020; font-weight:800; font-size:22px; text-shadow:0 1px 0 rgba(255,255,255,.3) }
-    .titles h1{ margin:0; font-size:clamp(18px, 2.6vw, 24px); letter-spacing:.2px }
-    .titles .sub{ font-size:12px; color:var(--muted); margin-top:4px }
-    .actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end }
-    button, .btn{
-      appearance:none; border:0; border-radius:12px;
-      background: linear-gradient(180deg, var(--panel-2), rgba(255,255,255,0.03));
-      color: var(--text); padding:10px 14px; cursor:pointer;
-      display:inline-flex; align-items:center; gap:10px;
-      box-shadow: var(--shadow-soft); border:1px solid var(--border);
-      transition: transform .05s ease, background .2s ease, border-color .2s ease;
-      font-weight:600; font-size:14px;
-    }
-    button:hover{ border-color: rgba(255,255,255,.16) }
-    button:active{ transform: translateY(1px) }
-    .btn-primary{ background: linear-gradient(135deg, rgba(56,182,255,.22), rgba(94,234,212,.16)); border: 1px solid rgba(56,182,255,.35); }
-    .hidden-input{ position:absolute; width:1px; height:1px; overflow:hidden; clip: rect(0,0,0,0); }
-    .grid{ display:grid; gap:16px }
-    .grid.cards{ grid-template-columns: repeat(5, minmax(0, 1fr)) }
-    @media (max-width:1200px){ .grid.cards{ grid-template-columns: repeat(3, minmax(0, 1fr)) } }
-    @media (max-width:680px){ .grid.cards{ grid-template-columns: 1fr } }
-    .card{
-      background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.02));
-      border:1px solid var(--border); border-radius: var(--radius);
-      padding:16px; box-shadow: var(--shadow); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    }
-    .kpi{ display:grid; grid-template-columns:auto 1fr; gap:6px 12px; align-items:center }
-    .kpi .label{ font-size:12px; color:var(--muted) }
-    .kpi .value{ font-weight:800; font-size:22px }
-    .kpi .trend{ font-size:12px; color:var(--muted) }
-    .progress{ height:8px; background: rgba(255,255,255,.07); border-radius:999px; overflow:hidden; margin-top:10px; border:1px solid var(--border) }
-    .progress > i{ display:block; height:100%; width:0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)) }
-    .filters{ display:grid; grid-template-columns: 1fr 180px 180px 150px 140px; gap:12px; align-items:end }
-    @media (max-width:980px){ .filters{ grid-template-columns: 1fr 1fr } }
-    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px }
-    input[type="text"], select{
-      width:100%; background: rgba(255,255,255,.04); color:var(--text);
-      border:1px solid var(--border); border-radius:12px; padding:10px 12px; outline:none;
-      transition:border-color .2s ease, background .2s ease; box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-    }
-    input[type="text"]:focus, select:focus{ border-color: rgba(56,182,255,.45); background: rgba(255,255,255,.06) }
-    .table-wrap{ margin-top:16px; background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.02)); border:1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow:hidden; }
-    table{ width:100%; border-collapse: collapse; font-size:14px }
-    thead th{
-      text-align:left; font-weight:700; letter-spacing:.2px; font-size:12px; color:var(--muted);
-      background: rgba(255,255,255,.03); position: sticky; top: 0; z-index: 2;
-      border-bottom: 1px solid var(--border); padding: 12px 14px; user-select: none; cursor: pointer;
-    }
-    tbody td{ padding: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tbody tr:hover{ background: rgba(255,255,255,.02) }
-    .status{ display:inline-flex; align-items:center; gap:10px; font-weight:700; padding: 6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border) }
-    .dot{ width: 10px; height: 10px; border-radius: 999px; display:inline-block }
-    .ok{ color:#a7f3d0 } .ok .dot{ background: var(--good) }
-    .alerta{ color:#fde68a } .alerta .dot{ background: var(--warn) }
-    .critico{ color:#fecaca } .critico .dot{ background: var(--bad) }
-    .hint{ font-size:12px; color:var(--muted); margin-top:8px }
-    .footer{ margin-top:18px; font-size:12px; color:var(--muted); text-align:right }
-    .nowrap{ white-space: nowrap }
-    .right{ text-align: right }
-    .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono" }
-    .sr-only{ position: absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0 }
 
-    /* Drilldown */
-    .row-toggle{ display:inline-flex; align-items:center; gap:10px }
-    .caret{
-      width: 18px; height: 18px; border-radius: 6px; border:1px solid var(--border);
-      display:inline-grid; place-items:center; background: rgba(255,255,255,.03);
-      transform: rotate(-90deg); transition: transform .18s ease, background .2s ease, border-color .2s ease;
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoramento de Duplicados</title>
+  <style>
+    * {
+      box-sizing: border-box;
     }
-    tr.expanded .caret{ transform: rotate(0deg); background: rgba(56,182,255,.14); border-color: rgba(56,182,255,.35) }
-    tr.details td{ background: rgba(255,255,255,.03); padding: 0 0 14px 0 }
-    .units{
-      margin: 0 14px 14px; border: 1px dashed var(--border); border-radius: 12px; overflow:hidden;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      height: 100vh;
     }
-    .units header{
-      display:flex; align-items:center; justify-content:space-between; padding: 10px 12px;
-      border-bottom: 1px dashed var(--border); margin: 0;
+    nav {
+      width: 200px;
+      background-color: #2c3e50;
+      padding: 2rem 1rem;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
-    .units table thead th{ background: rgba(255,255,255,.02); font-size: 11px }
-    .badge{
-      display:inline-flex; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid var(--border);
-      background: rgba(255,255,255,.03); font-size:12px; color:var(--muted);
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      text-align: left;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    nav button:hover {
+      text-decoration: underline;
+    }
+    main {
+      flex: 1;
+      padding: 2rem;
+      background-color: #f9f9f9;
+      overflow-y: auto;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .grid-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .city-card {
+      flex: 1 1 calc(33.333% - 1rem);
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .green { color: green; }
+    .red { color: red; }
+    .gray { color: gray; }
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 250px;
+      margin-bottom: 2rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    h2 {
+      font-size: 1.3rem;
+      margin: 2rem 0 1rem;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div class="titles">
-          <h1>Novetech • Monitoramento de Lotes (e‑SUS PEC) — KPIs por Filtro</h1>
-          <div class="sub">KPIs e tabela refletem a cidade/versão/status/termo selecionados • <span id="clock">--:--</span></div>
-        </div>
-      </div>
-      <div class="actions">
-        <label class="btn btn-primary" for="csvFile">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 12h-4V3H9v9H5l7 7l7-7zM5 19v2h14v-2H5z"/></svg>
-          Importar CSV
-        </label>
-        <input id="csvFile" class="hidden-input" type="file" accept=".csv,.txt" />
-        <button id="exportCsvBtn" class="btn" title="Exportar CSV">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 20h14v-2H5v2Zm7-3l5-5h-3V4h-4v8H7l5 5Z"/></svg>
-          Exportar CSV
-        </button>
-        <button id="resetBtn" class="btn" title="Limpar e restaurar exemplo">
-          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 6V3L8 7l4 4V8c2.8 0 5 2.2 5 5c0 1.5-.7 2.9-1.7 3.8l1.4 1.4C18.3 17 19 15.6 19 14c0-3.9-3.1-7-7-7Zm-5.7.2L4.9 7.6C3.7 9 3 10.5 3 12c0 3.9 3.1 7 7 7v3l4-4l-4-4v3c-2.8 0-5-2.2-5-5c0-1.5.7-2.9 1.7-3.8Z"/></svg>
-          Resetar
-        </button>
-      </div>
-    </header>
+  <nav>
+    <button onclick="showSection('cidades')">🏙️ Cidades</button>
+    <button onclick="showSection('graficos')">📉 Gráficos</button>
+  </nav>
+  <main>
+    <h1>📊 Monitoramento de Duplicados</h1>
+    <section id="cidades" class="grid-container"></section>
+    <section id="graficos" style="display: none"></section>
+  </main>
 
-    <section class="grid cards" aria-label="Indicadores">
-      <div class="card kpi" id="kpi-cidades" aria-live="polite">
-        <div class="badge">Cidades</div>
-        <div class="value mono" data-kpi="cidades">0</div>
-        <div class="label">No recorte atual</div>
-      </div>
-      <div class="card kpi" id="kpi-unidades" aria-live="polite">
-        <div class="badge">Unidades</div>
-        <div class="value mono" data-kpi="unidades">0</div>
-        <div class="label">No recorte atual</div>
-      </div>
-      <div class="card kpi" id="kpi-atendente">
-        <div class="badge">Atendente</div>
-        <div class="value mono" data-kpi="atendente">0</div>
-        <div class="label">Importado p/ Atendente de Saúde</div>
-        <div class="progress"><i id="prog-atendente"></i></div>
-      </div>
-      <div class="card kpi" id="kpi-pec">
-        <div class="badge">PEC</div>
-        <div class="value mono" data-kpi="pec">0</div>
-        <div class="label">Importado p/ o PEC</div>
-        <div class="progress"><i id="prog-pec"></i></div>
-      </div>
-      <div class="card kpi" id="kpi-invalidas">
-        <div class="badge">Qualidade</div>
-        <div class="value mono" data-kpi="invalidas">0</div>
-        <div class="label">Fichas inválidas</div>
-        <div class="trend" id="kpi-taxa">Taxa inválidas: —</div>
-      </div>
-    </section>
-
-    <div class="card" style="margin-top:16px">
-      <div class="filters">
-        <div>
-          <label for="search">Busca rápida</label>
-          <input id="search" type="text" placeholder="Buscar por cidade, unidade, nº PEC ou versão..." />
-        </div>
-        <div>
-          <label for="cidadeSel">Cidade</label>
-          <select id="cidadeSel">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div>
-          <label for="versaoSel">Versão do PEC</label>
-          <select id="versaoSel">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div>
-          <label for="statusSel">Status</label>
-          <select id="statusSel">
-            <option value="">Todos</option>
-            <option value="OK">OK</option>
-            <option value="Alerta">Alerta</option>
-            <option value="Crítico">Crítico</option>
-          </select>
-        </div>
-        <div>
-          <label for="limiteSel">Exibir</label>
-          <select id="limiteSel">
-            <option value="1000">Todos</option>
-            <option value="50">50</option>
-            <option value="100" selected>100</option>
-            <option value="200">200</option>
-          </select>
-        </div>
-      </div>
-      <div class="hint">
-        Os **KPIs** lá em cima refletem o **recorte atual** (ex.: cidade selecionada). Importe CSV de <strong>unidades</strong> (<code class="mono">cidade,unidade,numero_pec_atual,versao_pec_atual,importado_atendente,importado_pec,fichas_invalidas</code>) ou o formato antigo (apenas cidade).
-      </div>
-    </div>
-
-    <div class="table-wrap" role="region" aria-label="Tabela de lotes por cidade">
-      <table id="lotesTable" aria-describedby="legend">
-        <thead>
-          <tr>
-            <th data-key="cidade" aria-sort="none">Cidade</th>
-            <th data-key="numeroPEC" class="nowrap" aria-sort="none">Nº do PEC atual</th>
-            <th data-key="versaoPEC" aria-sort="none">Versão atual do PEC</th>
-            <th data-key="importadoAtendente" class="right nowrap" aria-sort="none">Importado p/ Atendente</th>
-            <th data-key="importadoPEC" class="right nowrap" aria-sort="none">Importado p/ PEC</th>
-            <th data-key="invalidas" class="right nowrap" aria-sort="none">Fichas inválidas</th>
-            <th data-key="status" aria-sort="none">Status</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-
-    <div id="legend" class="footer">
-      Novetech • Clique na linha da <strong>cidade</strong> para expandir as <strong>unidades</strong> • <span id="foot-count">0</span> cidades exibidas
-    </div>
-  </div>
-
-<script>
-(function(){
-  const $ = sel => document.querySelector(sel);
-  const $$ = sel => [...document.querySelectorAll(sel)];
-
-  // ---------- Estado ----------
-  let datasetUnidades = [];
-  let cidadesAgg = [];
-  let filtered = [];
-  let expanded = new Set();
-  let sortState = { key: "cidade", dir: "asc" };
-
-  const dom = {
-    clock: $("#clock"),
-    tbody: $("#tbody"),
-    cidadeSel: $("#cidadeSel"),
-    versaoSel: $("#versaoSel"),
-    statusSel: $("#statusSel"),
-    limiteSel: $("#limiteSel"),
-    search: $("#search"),
-    exportCsvBtn: $("#exportCsvBtn"),
-    resetBtn: $("#resetBtn"),
-    file: $("#csvFile"),
-    kpiCidades: document.querySelector('[data-kpi="cidades"]'),
-    kpiUnidades: document.querySelector('[data-kpi="unidades"]'),
-    kpiAtendente: document.querySelector('[data-kpi="atendente"]'),
-    kpiPec: document.querySelector('[data-kpi="pec"]'),
-    kpiInvalidas: document.querySelector('[data-kpi="invalidas"]'),
-    progAt: $("#prog-atendente"),
-    progPec: $("#prog-pec"),
-    kpiTaxa: $("#kpi-taxa"),
-    footCount: $("#foot-count")
-  };
-
-  // ---------- Util ----------
-  function onlyCityName(s){
-    const str = (s || "").toString().trim();
-    const m = str.match(/^(.+?)(?:\s*\/\s*[A-Za-z]{2})?$/);
-    return m ? m[1].trim() : str;
-  }
-  const normalize = s => (s || "").toString().toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "");
-  function toInt(v){
-    if (typeof v === "number") return Math.round(v);
-    if (v == null) return 0;
-    const cleaned = String(v).replace(/\./g,"").replace(",", ".").replace(/[^\d\.-]/g,"");
-    const n = parseFloat(cleaned);
-    return Number.isFinite(n) ? Math.round(n) : 0;
-  }
-  function detectDelimiter(text){
-    const first = text.split(/\r?\n/)[0] || "";
-    const cands = [",",";","\\t","|"];
-    let best = ","; let max = -1;
-    for (const d of cands){
-      const re = d === "\\t" ? /\t/g : new RegExp("\\" + d, "g");
-      const cnt = (first.match(re) || []).length;
-      if (cnt > max){ max = cnt; best = (d === "\\t" ? "\t" : d); }
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    function showSection(id) {
+      document.getElementById("cidades").style.display = id === 'cidades' ? 'flex' : 'none';
+      document.getElementById("graficos").style.display = id === 'graficos' ? 'block' : 'none';
     }
-    return best;
-  }
-  function parseCSV(text){
-    const delim = detectDelimiter(text);
-    const rows = [];
-    let cur = [], field = "", i = 0, inQuotes = false;
-    while (i < text.length){
-      const c = text[i++];
-      if (inQuotes){
-        if (c === '"'){
-          if (text[i] === '"'){ field += '"'; i++; }
-          else inQuotes = false;
-        } else field += c;
-      } else {
-        if (c === '"') inQuotes = true;
-        else if (c === delim){ cur.push(field); field = ""; }
-        else if (c === "\n" || c === "\r"){
-          if (c === "\r" && text[i] === "\n") i++;
-          cur.push(field); rows.push(cur); cur = []; field = "";
-        } else field += c;
-      }
-    }
-    if (field.length || cur.length){ cur.push(field); rows.push(cur); }
-    return rows.filter(r => r.length && r.some(x => (x||"").trim() !== ""));
-  }
-  function computeStatus(row){
-    const at = row.importadoAtendente || 0;
-    const pec = row.importadoPEC || 0;
-    const inv = row.invalidas || 0;
-    const taxaInv = at > 0 ? inv / at : 0;
-    const gap = at > 0 ? Math.max(0, (at - pec) / at) : (pec === 0 ? 0 : 1);
-    if (taxaInv <= 0.02 && gap <= 0.02) return "OK";
-    if (taxaInv <= 0.05 && gap <= 0.05) return "Alerta";
-    return "Crítico";
-  }
-  function modeOrMulti(values){
-    const map = new Map();
-    for (const v of values){
-      const s = (v ?? "").toString().trim();
-      if (!s) continue;
-      map.set(s, (map.get(s)||0)+1);
-    }
-    if (!map.size) return "—";
-    let best = null, freq = -1;
-    for (const [k,c] of map){ if (c > freq){ best = k; freq = c; } }
-    return map.size === 1 ? best : (best + " (múltiplas)");
-  }
-  function formatInt(n){ return (n||0).toLocaleString("pt-BR"); }
-  function pct(n){ return (n*100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%"; }
-  function escapeHtml(s){
-    return (s||"").toString().replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  }
 
-  // ---------- Dados de Exemplo (UNIDADES) ----------
-  function loadExampleUnits(){
-    datasetUnidades = [
-      // Alhandra
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA MATA REDONDA II", numeroPEC:"1115", versaoPEC:"5.4.21", importadoAtendente:7643, importadoPEC:6986, invalidas:13 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA SALGADINHO",     numeroPEC:"1110", versaoPEC:"5.4.21", importadoAtendente:4540, importadoPEC:4123, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA DO ACAIS",      numeroPEC:"1109", versaoPEC:"5.4.21", importadoAtendente:6853, importadoPEC:6219, invalidas:25 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA OITEIRO II",      numeroPEC:"1018", versaoPEC:"5.4.21", importadoAtendente:9370, importadoPEC:8639, invalidas:7 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA MATA REDONDA I",      numeroPEC:"1116", versaoPEC:"5.4.21", importadoAtendente:5500, importadoPEC:4930, invalidas:17 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA NOVA ALHANDRA",      numeroPEC:"1114", versaoPEC:"5.4.21", importadoAtendente:2274, importadoPEC:2199, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"CENTRO DE SAUDE DE ALHANDRA",      numeroPEC:"1113", versaoPEC:"5.4.21", importadoAtendente:6468, importadoPEC:5790, invalidas:5 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UBS CENTRO ALHANDRA",      numeroPEC:"1112", versaoPEC:"5.4.21", importadoAtendente:5756, importadoPEC:6124, invalidas:8 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"UNIDADE DE SAUDE DA FAMILIA CENTRO II",numeroPEC:"1126", versaoPEC:"5.4.21", importadoAtendente:2664, importadoPEC:2528, invalidas:8 },//dataenvio: 26/11/2025
-      { cidade:"Alhandra", unidade:"POSTO ANCORA DE VIEIRA",numeroPEC:"1117", versaoPEC:"5.4.21", importadoAtendente:471, importadoPEC:432, invalidas:8 },//dataenvio: 26/11/2025
-      // Alto do Rodrigues
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA VII", numeroPEC:"454", versaoPEC:"5.4.21", importadoAtendente:1482, importadoPEC:1304, invalidas:7 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA VI",  numeroPEC:"453", versaoPEC:"5.4.21", importadoAtendente:3374, importadoPEC:2965, invalidas:6 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA V",   numeroPEC:"452", versaoPEC:"5.4.21", importadoAtendente:1833, importadoPEC:1580, invalidas:13 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA IV",   numeroPEC:"451", versaoPEC:"5.4.21", importadoAtendente:964, importadoPEC:720, invalidas:17 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA III",   numeroPEC:"450", versaoPEC:"5.4.21", importadoAtendente:2716, importadoPEC:2291, invalidas:171	 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA II",   numeroPEC:"449", versaoPEC:"5.4.21", importadoAtendente:2627, importadoPEC:2324, invalidas:30 },//dataenvio: 26/11/2025
-      { cidade:"Alto do Rodrigues", unidade:"CENTRO DE SAUDE DA FAMILIA I",   numeroPEC:"448", versaoPEC:"5.4.21", importadoAtendente:1228, importadoPEC:1082, invalidas:48 },//dataenvio: 26/11/2025
-      // Apodi
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE DE GOES", numeroPEC:"826", versaoPEC:"5.4.21", importadoAtendente:1483, importadoPEC:1370, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UNIDADE BASICA DE SAUDE DA COMUNIDADE BICO TORTO",   numeroPEC:"825", versaoPEC:"5.4.21", importadoAtendente:3752, importadoPEC:3508, invalidas:59 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UBS GALDINO JULIAO DA MOTA",   numeroPEC:"824", versaoPEC:"5.4.21", importadoAtendente:2403, importadoPEC:2154, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"CENTRO DE SAUDE DE APODI",   numeroPEC:"821", versaoPEC:"5.4.21", importadoAtendente:8285, importadoPEC:7435, invalidas:79 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UNIDADE BASICA DE SAUDE DO BACURAU I",   numeroPEC:"804", versaoPEC:"5.4.21", importadoAtendente:4111, importadoPEC:3762, invalidas:2	 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE SANTA ROSA",   numeroPEC:"802", versaoPEC:"5.4.21", importadoAtendente:3571, importadoPEC:3279, invalidas:24 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UNIDADE BASICA DE SAUDE SAO SEBASTIAO",   numeroPEC:"801", versaoPEC:"5.4.21", importadoAtendente:5349, importadoPEC:5777, invalidas:173 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE DE SOLEDADE",   numeroPEC:"800", versaoPEC:"5.4.21", importadoAtendente:6386, importadoPEC:6626, invalidas:188 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE DO BAMBURRAL",   numeroPEC:"799", versaoPEC:"5.4.21", importadoAtendente:2400, importadoPEC:2338, invalidas:24 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE MELANCIAS",   numeroPEC:"797", versaoPEC:"5.4.21", importadoAtendente:2645, importadoPEC:4854, invalidas:35 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UNIDADE BASICA DE SAUDE DO IPE",   numeroPEC:"796", versaoPEC:"5.4.21", importadoAtendente:6517, importadoPEC:5627, invalidas:156 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"POSTO DE SAUDE CORREGO",   numeroPEC:"795", versaoPEC:"5.4.21", importadoAtendente:4341, importadoPEC:3709, invalidas:132 },//dataenvio: 26/11/2025
-      { cidade:"Apodi", unidade:"UNIDADE BASICA DE SAUDE DO CAIC",   numeroPEC:"827", versaoPEC:"5.4.21", importadoAtendente:7419, importadoPEC:6579, invalidas:227 },//dataenvio: 26/11/2025
-      // Areia
-      { cidade:"Areia", unidade:"ESF X MARIA DAS DORES MONTEIRO BARACHO MUTIRAO", numeroPEC:"754", versaoPEC:"5.4.21", importadoAtendente:3348, importadoPEC:3100, invalidas:108 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"ESF XI VEREADOR JOSEILTON SILVA",  numeroPEC:"753", versaoPEC:"5.4.21", importadoAtendente:2539, importadoPEC:2524, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"JOSE PAULINO DA SILVA ESF VII",  numeroPEC:"752", versaoPEC:"5.4.21", importadoAtendente:4067, importadoPEC:4048, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"UNIDADE DE SAUDE DA FAMILIA DISTRITO SANTA MARIA",  numeroPEC:"749	", versaoPEC:"5.4.21", importadoAtendente:4933, importadoPEC:4755, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"JOSE EVARISTO DA SILVA ESF VIII",  numeroPEC:"748", versaoPEC:"5.4.21", importadoAtendente:1332, importadoPEC:1319, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"PSF VI JUVENAL ESPINOLA",  numeroPEC:"747", versaoPEC:"5.4.21", importadoAtendente:3744, importadoPEC:3701, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"PSF IV JOSE GUEDES DA COSTA",  numeroPEC:"746", versaoPEC:"5.4.21", importadoAtendente:5811, importadoPEC:	5595, invalidas:127 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"POSTO DE SAUDE DR MORAES DE GALVAO PSF III",  numeroPEC:"745", versaoPEC:"5.4.21", importadoAtendente:3751, importadoPEC:3657, invalidas:10 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"ESF IX FRANCISCO DE ASSIS GONDIM DISTRITO DE MUQUEM	",  numeroPEC:"744", versaoPEC:"5.4.21", importadoAtendente:4523, importadoPEC:4371, invalidas:7 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"PSF DE MATA LIMPA",  numeroPEC:"742", versaoPEC:"5.4.21", importadoAtendente:8410, importadoPEC:7903, invalidas:11	 },//dataenvio: 26/11/2025
-      { cidade:"Areia", unidade:"ANTONIO TRAJANO DOS SANTOS",  numeroPEC:"743", versaoPEC:"5.4.21", importadoAtendente:4907, importadoPEC:4767, invalidas:8 },//dataenvio: 26/11/2025
-      //Assu
-      { cidade:"Assu", unidade:"UNIDADE DE SAUDE OSMAR BATISTA DA SILVA", numeroPEC:"1278", versaoPEC:"5.4.21", importadoAtendente:2386, importadoPEC:2277, invalidas:33 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS BELA VISTA PIATO",  numeroPEC:"1277", versaoPEC:"5.4.21", importadoAtendente:1662, importadoPEC:1551, invalidas:27 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS PANON II",  numeroPEC:"1276", versaoPEC:"5.4.21", importadoAtendente:2889, importadoPEC:2638, invalidas:178 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS NOVA ESPERANCA",  numeroPEC:"1275", versaoPEC:"5.4.21", importadoAtendente:3044, importadoPEC:2803, invalidas:15 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS ORTENCIO FERREIRA LIMA",  numeroPEC:"1273", versaoPEC:"5.4.21", importadoAtendente:4338, importadoPEC:3176, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS DR FRANCISCO EVARISTO DE OLIVEIRA SALES",  numeroPEC:"1272", versaoPEC:"5.4.21", importadoAtendente:3259, importadoPEC:3001, invalidas:5 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS ROBERIO ROBERTO BEZERRA",  numeroPEC:"1271	", versaoPEC:"5.4.21", importadoAtendente:4207, importadoPEC:3949, invalidas:64 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS JOANA FLORENCIO",  numeroPEC:"1270", versaoPEC:"5.4.21", importadoAtendente:2170, importadoPEC:1607, invalidas:42 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS MORADA NOVA",  numeroPEC:"1269", versaoPEC:"5.4.21", importadoAtendente:3419, importadoPEC:3234, invalidas:27 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS OFELIA WANDERLEY RODRIGUES",  numeroPEC:"1268", versaoPEC:"5.4.21", importadoAtendente:6760	, importadoPEC:6082, invalidas:60 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS DO RIACHO",  numeroPEC:"1267	", versaoPEC:"5.4.21", importadoAtendente:1404, importadoPEC:1374, invalidas:14 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS ANTONIO CARLOS DANTAS DA SILVA",  numeroPEC:"1266", versaoPEC:"5.4.21", importadoAtendente:2156, importadoPEC:1938, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS MARIA DA PENHA",  numeroPEC:"1265	", versaoPEC:"5.4.21", importadoAtendente:2750, importadoPEC:2584, invalidas:196 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS JOSE DINARTE SOARES",  numeroPEC:"1264	", versaoPEC:"5.4.21", importadoAtendente:4795, importadoPEC:4439, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS JANDUIS",  numeroPEC:"1263	", versaoPEC:"5.4.21", importadoAtendente:3402, importadoPEC:3100, invalidas:187 },//dataenvio: 26/11/2025
-      { cidade:"Assu", unidade:"UBS SEVERINO MAIA",  numeroPEC:"1274	", versaoPEC:"5.4.21", importadoAtendente:1570, importadoPEC:1516, invalidas:23 },//dataenvio: 26/11/2025
-      //Caldas Brandão
-      { cidade:"Caldas Brandão", unidade:"PSF III VILA NOVA", numeroPEC:"204", versaoPEC:"5.4.21", importadoAtendente:3691, importadoPEC:3652, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Caldas Brandão", unidade:"PSF I DE CALDAS BRANDAO",  numeroPEC:"171", versaoPEC:"5.4.21", importadoAtendente:1810, importadoPEC:1717, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Caldas Brandão", unidade:"PSF II CENTRO DE SAUDE DE CAJA",  numeroPEC:"205", versaoPEC:"5.4.21", importadoAtendente:4282, importadoPEC:4065, invalidas:5 },//dataenvio: 26/11/2025
-      //Conde
-      { cidade:"Conde", unidade:"UBS JOSE MANGUEIRA RAMALHO DR MANGUEIRA", numeroPEC:"481", versaoPEC:"5.4.21", importadoAtendente:2765, importadoPEC:2317, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS VILLAGE", numeroPEC:"471", versaoPEC:"5.4.21", importadoAtendente:1858, importadoPEC:1591, invalidas:10 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS MITUACU", numeroPEC:"470", versaoPEC:"5.4.21", importadoAtendente:1956, importadoPEC:1773, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS JACUMA", numeroPEC:"469", versaoPEC:"5.4.21", importadoAtendente:1258, importadoPEC:1114, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS NOSSA SENHORA DA CONCEICAO", numeroPEC:"468", versaoPEC:"5.4.21", importadoAtendente:3298, importadoPEC:3140, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS MATA DA CHICA", numeroPEC:"467", versaoPEC:"5.4.21", importadoAtendente:1574, importadoPEC:1434, invalidas:0 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS CARAPIBUS", numeroPEC:"466", versaoPEC:"5.4.21", importadoAtendente:3167, importadoPEC:2761, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS CENTRO", numeroPEC:"465", versaoPEC:"5.4.21", importadoAtendente:7035, importadoPEC:6784, invalidas:5 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS QUILOMBOLA DO GURUGI", numeroPEC:"464", versaoPEC:"5.4.21", importadoAtendente:3213, importadoPEC:3038, invalidas:6 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS POUSADA DO CONDE", numeroPEC:"463", versaoPEC:"5.4.21", importadoAtendente:4075, importadoPEC:3954, invalidas:6 },//dataenvio: 26/11/2025
-      { cidade:"Conde", unidade:"UBS NOSSA SENHORA DAS NEVES", numeroPEC:"462", versaoPEC:"5.4.21", importadoAtendente:6812, importadoPEC:6374, invalidas:17 },//dataenvio: 26/11/2025
-      //Cordeiro
-      { cidade:"Cordeiro", unidade:"PSF LAVRINHAS", numeroPEC:"425", versaoPEC:"5.4.21", importadoAtendente:1651, importadoPEC:1599, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Cordeiro", unidade:"ESF RODOLFO", numeroPEC:"424", versaoPEC:"5.4.21", importadoAtendente:2773, importadoPEC:2730, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Cordeiro", unidade:"PSF MANANCIAL", numeroPEC:"423", versaoPEC:"5.4.21", importadoAtendente:2016, importadoPEC:1930, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Cordeiro", unidade:"PSF CENTRO", numeroPEC:"422", versaoPEC:"5.4.21", importadoAtendente:5449, importadoPEC:4504, invalidas:35 },//dataenvio: 26/11/2025
-      { cidade:"Cordeiro", unidade:"PSF RETIRO POETICO", numeroPEC:"420", versaoPEC:"5.4.21", importadoAtendente:2950, importadoPEC:2703, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Cordeiro", unidade:"PSF SAO LUIZ", numeroPEC:"419", versaoPEC:"5.4.21", importadoAtendente:2845, importadoPEC:2654, invalidas:1 },//dataenvio: 26/11/2025
-      //Itabaiana
-      { cidade:"Itabaiana", unidade:"UBSF ACUDE DAS PEDRAS", numeroPEC:"628	", versaoPEC:"5.4.21", importadoAtendente:3488, importadoPEC:3240, invalidas:15	 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF DE GUARITA", numeroPEC:"627", versaoPEC:"5.4.21", importadoAtendente:2750, importadoPEC:2738, invalidas:24 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF SITIO NOVO", numeroPEC:"626", versaoPEC:"5.4.21", importadoAtendente:2399, importadoPEC:2162, invalidas:452 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF CAMPO GRANDE", numeroPEC:"625", versaoPEC:"5.4.21", importadoAtendente:2787, importadoPEC:2601, invalidas:109 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF CASA DA MAE POBRE", numeroPEC:"624", versaoPEC:"5.4.21", importadoAtendente:5413, importadoPEC:5385, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF PAULO OUVIDIO DE LUCENA", numeroPEC:"623", versaoPEC:"5.4.21", importadoAtendente:3882, importadoPEC:3665, invalidas:14 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF DE BREJINHO", numeroPEC:"622", versaoPEC:"5.4.21", importadoAtendente:8172, importadoPEC:7684, invalidas:210 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF SUBURBANA", numeroPEC:"621", versaoPEC:"5.4.21", importadoAtendente:5680, importadoPEC:5419, invalidas:27	 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF BOTAFOGO", numeroPEC:"620", versaoPEC:"5.4.21", importadoAtendente:4255, importadoPEC:4101, invalidas:46 },//dataenvio: 27/11/2025
-      { cidade:"Itabaiana", unidade:"UBSF COSTA E SILVA", numeroPEC:"619", versaoPEC:"5.4.21", importadoAtendente:7002, importadoPEC:6764, invalidas:11 },//dataenvio: 27/11/2025
-      //Itapororoca
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA CIPOAL", numeroPEC:"870	", versaoPEC:"5.4.21", importadoAtendente:2189, importadoPEC:2044, invalidas:52 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA CENTRO", numeroPEC:"869	", versaoPEC:"5.4.21", importadoAtendente:2884, importadoPEC:2665, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA ROSEIRA", numeroPEC:"868	", versaoPEC:"5.4.21", importadoAtendente:6276, importadoPEC:5748, invalidas:102 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA IPIOCA DE BAIXO", numeroPEC:"867	", versaoPEC:"5.4.21", importadoAtendente:4222, importadoPEC:3874, invalidas:167 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE BASICA DE SAUDE DO TAMBOR", numeroPEC:"866	", versaoPEC:"5.4.21", importadoAtendente:1650, importadoPEC:1610, invalidas:29 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA SAO JOAO", numeroPEC:"864	", versaoPEC:"5.4.21", importadoAtendente:6002, importadoPEC:5349, invalidas:55 },//dataenvio: 26/11/2025
-      { cidade:"Itapororoca", unidade:"UNIDADE DE SAUDE DA FAMILIA CRUZEIRO", numeroPEC:"862", versaoPEC:"5.4.21", importadoAtendente:4586, importadoPEC:4420, invalidas:78 },//dataenvio: 26/11/2025
-      //Itatuba
-      { cidade:"Itatuba", unidade:"UBSF V", numeroPEC:"797	", versaoPEC:"5.4.21", importadoAtendente:3895, importadoPEC:3528, invalidas:12 },//dataenvio: 26/11/2025
-      { cidade:"Itatuba", unidade:"UBSF I SEVERINA MOREIRA", numeroPEC:"796	", versaoPEC:"5.4.21", importadoAtendente:2569, importadoPEC:2446, invalidas:7 },//dataenvio: 26/11/2025
-      { cidade:"Itatuba", unidade:"UBSF VI JOSENALVA ARRUDA DE BRITO", numeroPEC:"795	", versaoPEC:"5.4.21", importadoAtendente:3153, importadoPEC:2916, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Itatuba", unidade:"UBSF III MARIA LUCIENE DE BRITO PEREIRA", numeroPEC:"794	", versaoPEC:"5.4.21", importadoAtendente:2087, importadoPEC:1958, invalidas:0 },//dataenvio: 26/11/2025
-      { cidade:"Itatuba", unidade:"UBSF IV", numeroPEC:"793	", versaoPEC:"5.4.21", importadoAtendente:3875, importadoPEC:3998, invalidas:9 },//dataenvio: 26/11/2025
-      { cidade:"Itatuba", unidade:"UBSF II MARIA DAS NEVES MARTINS DE ANDRADE", numeroPEC:"789	", versaoPEC:"5.4.21", importadoAtendente:2043, importadoPEC:1958, invalidas:3 },//dataenvio: 26/11/2025
-      //Mogeiro
-      { cidade:"Mogeiro", unidade:"USF 7 SITIO CABRAL", numeroPEC:"468	", versaoPEC:"5.4.21", importadoAtendente:1685, importadoPEC:1559, invalidas:23 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF I MARIA DA GLORIA ALVES DA SILVA", numeroPEC:"467	", versaoPEC:"5.4.21", importadoAtendente:2841, importadoPEC:2699, invalidas:47 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF VI FRANCISCO CANDIDO DA SILVA", numeroPEC:"470	", versaoPEC:"5.4.21", importadoAtendente:4347, importadoPEC:4156, invalidas:107 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF II TEREZINHA BENICIO DA COSTA", numeroPEC:"473	", versaoPEC:"5.4.21", importadoAtendente:5117	, importadoPEC:4802, invalidas:8	 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF III MARIA DO SOCORRO DA SILVA", numeroPEC:"472	", versaoPEC:"5.4.21", importadoAtendente:1905, importadoPEC:1798, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF IV JOSEFA VICENCIA DA CONCEICAO", numeroPEC:"471	", versaoPEC:"5.4.21", importadoAtendente:1997, importadoPEC:1874, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Mogeiro", unidade:"USF V JOSE PINTO DA SILVA", numeroPEC:"469	", versaoPEC:"5.4.21", importadoAtendente:3887, importadoPEC:3670, invalidas:26	 },//dataenvio: 27/11/2025
-      //Patu
-      { cidade:"Patu", unidade:"UNIDADE BASICA DE SAUDE FRANCISCO LIMA", numeroPEC:"405	", versaoPEC:"5.4.21", importadoAtendente:1681, importadoPEC:1671, invalidas:9 },//dataenvio: 26/11/2025
-      { cidade:"Patu", unidade:"UNIDADE DE SAUDE DA FAMILIA LOURIVAL ROCHA", numeroPEC:"397	", versaoPEC:"5.4.21", importadoAtendente:3171, importadoPEC:3130, invalidas:5 },//dataenvio: 26/11/2025
-      { cidade:"Patu", unidade:"UNIDADE DE SAUDE DA FAMILIA ROSALITA FORTE DANTAS", numeroPEC:"396	", versaoPEC:"5.4.21", importadoAtendente:2629, importadoPEC:2593, invalidas:4 },//dataenvio: 26/11/2025
-      { cidade:"Patu", unidade:"UNIDADE DE SAUDE DA FAMILIA JOAO INACIO", numeroPEC:"399	", versaoPEC:"5.4.21", importadoAtendente:1570, importadoPEC:1554, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Patu", unidade:"UNIDADE BASICA DE SAUDE DR MAURICIO CORTEZ DE PAIVA", numeroPEC:"398	", versaoPEC:"5.4.21", importadoAtendente:2928, importadoPEC:2908, invalidas:4 },//dataenvio: 26/11/2025
-      { cidade:"Patu", unidade:"UNIDADE DE SAUDE DA FAMILIA FRANCISCO CICERO FILHO", numeroPEC:"395	", versaoPEC:"5.4.21", importadoAtendente:2874, importadoPEC:2859, invalidas:283 },//dataenvio: 26/11/2025
-    //PedroAvelino
-      { cidade:"PedroAvelino", unidade:"CENTRO DE SAUDE", numeroPEC:"187		", versaoPEC:"5.4.21", importadoAtendente:3066, importadoPEC:2966, invalidas:20	 },//dataenvio: 26/11/2025
-      { cidade:"PedroAvelino", unidade:"UNID BASICA ZELITO CALACA", numeroPEC:"186	", versaoPEC:"5.4.21", importadoAtendente:2698, importadoPEC:2604, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"PedroAvelino", unidade:"POSTO DE SAUDE BAIXA DO MEIO", numeroPEC:"185	", versaoPEC:"5.4.21", importadoAtendente:1299, importadoPEC:1250, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"PedroAvelino", unidade:"UNIDADE BASICA DE SAUDE JOSE MARTINS", numeroPEC:"184	", versaoPEC:"5.4.21", importadoAtendente:1396, importadoPEC:1373, invalidas:19 },//dataenvio: 26/11/2025
-    //Pendencias
-      { cidade:"Pendencias", unidade:"POSTO DE SAUDE VALDEMAR RODRIGUES DA SILVEIRA", numeroPEC:"374		", versaoPEC:"5.4.21", importadoAtendente:1392, importadoPEC:1165	, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Pendencias", unidade:"UBS DA FAMILIA LUZIA TORQUATO", numeroPEC:"371		", versaoPEC:"5.4.21", importadoAtendente:1388, importadoPEC:1142, invalidas:4 },//dataenvio: 26/11/2025
-      { cidade:"Pendencias", unidade:"CENTRO DE SAUDE MANOEL MOREIRA DA SILVA", numeroPEC:"369", versaoPEC:"5.4.21", importadoAtendente:1109, importadoPEC:765, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Pendencias", unidade:"UBS MARIA DAS DORES BARBOSA", numeroPEC:"368		", versaoPEC:"5.4.21", importadoAtendente:1090, importadoPEC:937, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Pendencias", unidade:"UBS DIMAS MARTINS CABRAL", numeroPEC:"367		", versaoPEC:"5.4.21", importadoAtendente:998, importadoPEC:958, invalidas:3 },//dataenvio: 26/11/2025
-      { cidade:"Pendencias", unidade:"POSTO DE SAUDE FRANCISCO HERMOGENES DE MEDEIROS", numeroPEC:"365		", versaoPEC:"5.4.21", importadoAtendente:2439, importadoPEC:2418, invalidas:1 },//dataenvio: 26/11/2025
-    //Pitimbu
-      { cidade:"Pitimbu", unidade:"USF PITIMBU VILA", numeroPEC:"394		", versaoPEC:"5.4.21", importadoAtendente:1641, importadoPEC:1591, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF ACAU COLONIA", numeroPEC:"393		", versaoPEC:"5.4.21", importadoAtendente:1458, importadoPEC:1288, invalidas:10 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF CAMUCIM", numeroPEC:"388	", versaoPEC:"5.4.21", importadoAtendente:834, importadoPEC:747, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"UBS COSMO VALDEVINO DOS SANTOS ANDREZA", numeroPEC:"387", versaoPEC:"5.4.21", importadoAtendente:2074, importadoPEC:2046, invalidas:3	 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF PITIMBU GUARITA", numeroPEC:"386		", versaoPEC:"5.4.21", importadoAtendente:1074, importadoPEC:972, invalidas:1 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF ACAU MUCUIM", numeroPEC:"382		", versaoPEC:"5.4.21", importadoAtendente:3650, importadoPEC:3515, invalidas:10 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF TAQUARA", numeroPEC:"381		", versaoPEC:"5.4.21", importadoAtendente:2147, importadoPEC:2132, invalidas:6	 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"PSF PONTA DE COQUEIRO", numeroPEC:"380		", versaoPEC:"5.4.21", importadoAtendente:2970, importadoPEC:2798, invalidas:20 },//dataenvio: 26/11/2025
-      { cidade:"Pitimbu", unidade:"USF APAZA", numeroPEC:"379	", versaoPEC:"5.4.21", importadoAtendente:1884, importadoPEC:1814, invalidas:2 },//dataenvio: 26/11/2025
-    //PocoBranco
-      { cidade:"PocoBranco", unidade:"CENTRO CLINICO DE ESPECIALIDADES", numeroPEC:"476		", versaoPEC:"5.4.21", importadoAtendente:1, importadoPEC:1, invalidas:0 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 3", numeroPEC:"471		", versaoPEC:"5.4.21", importadoAtendente:2088, importadoPEC:1736, invalidas:8 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 5", numeroPEC:"470		", versaoPEC:"5.4.21", importadoAtendente:2997, importadoPEC:2773, invalidas:25 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 2", numeroPEC:"469		", versaoPEC:"5.4.21", importadoAtendente:3578, importadoPEC:3246, invalidas:11 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UBS BAIXOS DE SAO MIGUEL", numeroPEC:"468		", versaoPEC:"5.4.21", importadoAtendente:1766, importadoPEC:1396, invalidas:13 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 6", numeroPEC:"467		", versaoPEC:"5.4.21", importadoAtendente:1702, importadoPEC:1466, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 4", numeroPEC:"466		", versaoPEC:"5.4.21", importadoAtendente:2005, importadoPEC:1880, invalidas:6 },//dataenvio: 26/11/2025
-      { cidade:"PocoBranco", unidade:"UNIDADE BASICA DE SAUDE UBS 1", numeroPEC:"465		", versaoPEC:"5.4.21", importadoAtendente:3911, importadoPEC:3696, invalidas:16 },//dataenvio: 26/11/2025
-    //São José de Ubá
-      { cidade:"SãoJosédeUbá", unidade:"ESTRATEGIA DA SAUDE DA FAMILIA ESF WASHINGTON BISMARCK NEY", numeroPEC:"393		", versaoPEC:"5.4.21", importadoAtendente:2428, importadoPEC:1981, invalidas:62 },//dataenvio: 27/11/2025
-      { cidade:"SãoJosédeUbá", unidade:"ESTRATEGIA DA SAUDE DA FAMILIA ESF DR EVERARDO TRAVASSOS", numeroPEC:"392		", versaoPEC:"5.4.21", importadoAtendente:778, importadoPEC:735, invalidas:77	 },//dataenvio: 27/11/2025
-      { cidade:"SãoJosédeUbá", unidade:"ESTRATEGIA DA SAUDE DA FAMILIA ESF ANTONIO MORAES FILHO", numeroPEC:"391		", versaoPEC:"5.4.21", importadoAtendente:2605, importadoPEC:2349, invalidas:16 },//dataenvio: 27/11/2025
-      { cidade:"SãoJosédeUbá", unidade:"ESTRATEGIA DA SAUDE DA FAMILIA ANALIA FIQUEIRA LESSA", numeroPEC:"390		", versaoPEC:"5.4.21", importadoAtendente:2144, importadoPEC:2239, invalidas:96 },//dataenvio: 27/11/2025
-      //Tibau
-      { cidade:"Tibau", unidade:"UNIDADE BASICA DE SAUDE TEREZINHA LIMA PESSOA", numeroPEC:"236	", versaoPEC:"5.4.21", importadoAtendente:1720, importadoPEC:1225, invalidas:10	 },//dataenvio: 26/11/2025
-      { cidade:"Tibau", unidade:"UNIDADE MARIA IRISMAR NOLASCO", numeroPEC:"235	", versaoPEC:"5.4.21", importadoAtendente:1630, importadoPEC:1450, invalidas:9 },//dataenvio: 26/11/2025
-      //Trajano
-      { cidade:"Trajano", unidade:"PSF TAPERA", numeroPEC:"97	", versaoPEC:"5.4.21", importadoAtendente:1939, importadoPEC:1876, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Trajano", unidade:"PSF REPRESA", numeroPEC:"64	", versaoPEC:"5.4.21", importadoAtendente:1739, importadoPEC:1555, invalidas:6 },//dataenvio: 26/11/2025
-      { cidade:"Trajano", unidade:"PSF DR ELIAS", numeroPEC:"54	", versaoPEC:"5.4.21", importadoAtendente:1745, importadoPEC:1658, invalidas:14 },//dataenvio: 26/11/2025
-      { cidade:"Trajano", unidade:"POSTO DE SAUDE PONTE NOVA", numeroPEC:"121		", versaoPEC:"5.4.21", importadoAtendente:1, importadoPEC:1, invalidas:0 },//dataenvio: 26/11/2025
-      { cidade:"Trajano", unidade:"ESF JALMEIR MORAIS VIANA", numeroPEC:"108		", versaoPEC:"5.4.21", importadoAtendente:617, importadoPEC:547, invalidas:2 },//dataenvio: 26/11/2025
-      { cidade:"Trajano", unidade:"PSF MARIA MENDONCA", numeroPEC:"65	", versaoPEC:"5.4.21", importadoAtendente:724, importadoPEC:698, invalidas:1 },//dataenvio: 26/11/2025
-      //Brumado
-      { cidade:"Brumado", unidade:"USF IVANEIDE DAS NEVES SANTOS TEIXEIRA", numeroPEC:"1484	", versaoPEC:"5.4.21", importadoAtendente:5037, importadoPEC:4708, invalidas:9 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF MARCIONILIO RODRIGUES DOS SANTOS", numeroPEC:"1483	", versaoPEC:"5.4.21", importadoAtendente:11380, importadoPEC:10949, invalidas:7 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA RAIMUNDO FERNANDES", numeroPEC:"1482	", versaoPEC:"5.4.21", importadoAtendente:6412, importadoPEC:6149, invalidas:6 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF JOAQUIM DE CASTRO DONATO", numeroPEC:"1481	", versaoPEC:"5.4.21", importadoAtendente:5591, importadoPEC:6329, invalidas:16 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA DR PAULO VARGAS", numeroPEC:"1480	", versaoPEC:"5.4.21", importadoAtendente:4893, importadoPEC:4677, invalidas:20 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF LEOBINO JOSE DE SOUZA", numeroPEC:"1479	", versaoPEC:"5.4.21", importadoAtendente:1842, importadoPEC:1736, invalidas:15 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF VEREADOR SINVAL NEVES", numeroPEC:"1478	", versaoPEC:"5.4.21", importadoAtendente:4791, importadoPEC:4633, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF  FERNANDO LUIZ GONCALVES TRINDADE", numeroPEC:"1477	", versaoPEC:"5.4.21", importadoAtendente:7356, importadoPEC:6935, invalidas:12 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA DR ARLINDO MAGNO STANCHI", numeroPEC:"1476	", versaoPEC:"5.4.21", importadoAtendente:6638, importadoPEC:6391, invalidas:13 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF ALTINO ELIZEU DE SOUZA", numeroPEC:"1475	", versaoPEC:"5.4.21", importadoAtendente:2728, importadoPEC:2595, invalidas:200 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF LIZIANE DOS SANTOS ALVES", numeroPEC:"1474	", versaoPEC:"5.4.21", importadoAtendente:16351, importadoPEC:15026, invalidas:95 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA JUVENCIO SOUZA LIMA", numeroPEC:"1473	", versaoPEC:"5.4.21", importadoAtendente:5258, importadoPEC:5051, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA DR NEWTON ALVES DE CASTRO", numeroPEC:"1472	", versaoPEC:"5.4.21", importadoAtendente:6957, importadoPEC:6631, invalidas:11 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"UNIDADE DE SAUDE DA FAMILIA WILSON TIBO", numeroPEC:"1471	", versaoPEC:"5.4.21", importadoAtendente:4058, importadoPEC:3991, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Brumado", unidade:"USF ENFERMEIRA KEILA FRANCIOLE LIMA ALVES TEIXEIRA", numeroPEC:"1470	", versaoPEC:"5.4.21", importadoAtendente:6210, importadoPEC:5965, invalidas:1 },//dataenvio: 27/11/2025
-      //FrancoDaRocha
-      { cidade:"FrancoDaRocha", unidade:"UBS JULIA TEIXEIRA DA SILVA", numeroPEC:"935	", versaoPEC:"5.4.21", importadoAtendente:442, importadoPEC:409, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS ANTONIO DE PAULA LIMA", numeroPEC:"934	", versaoPEC:"5.4.21", importadoAtendente:984, importadoPEC:858	, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS ENF ROSA GENOVEVA DOS REIS", numeroPEC:"933	", versaoPEC:"5.4.21", importadoAtendente:3204, importadoPEC:3120, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS DR OSORIO CESAR", numeroPEC:"931	", versaoPEC:"5.4.21", importadoAtendente:2099, importadoPEC:1997, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS NEUSA RAMOS ROSSI", numeroPEC:"930	", versaoPEC:"5.4.21", importadoAtendente:2906, importadoPEC:2776, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS MARCELO GOES DE SOUZA", numeroPEC:"929	", versaoPEC:"5.4.21", importadoAtendente:3704, importadoPEC:3358, invalidas:11 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS DR LEOPOLDINO JOSE DOS PASSOS", numeroPEC:"928	", versaoPEC:"5.4.21", importadoAtendente:4716, importadoPEC:4176, invalidas:8 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UNIDADE BASICA DE SAUDE VER RODRIGO DA CRUZ FRANCA", numeroPEC:"927	", versaoPEC:"5.4.21", importadoAtendente:6229, importadoPEC:5772, invalidas:210 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UNIDADE BASICA DE SAUDE ADILSON GOMES DE SA", numeroPEC:"926	", versaoPEC:"5.4.21", importadoAtendente:2453, importadoPEC:2365, invalidas:8 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS ANTONIA ELIAS DE ARAUJO CAVALCANTI", numeroPEC:"925	", versaoPEC:"5.4.21", importadoAtendente:3921, importadoPEC:3427, invalidas:6 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UNIDADE BASICA DE SAUDE PASTOR ELIAS PEREIRA", numeroPEC:"924	", versaoPEC:"5.4.21", importadoAtendente:2294, importadoPEC:2127, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UNIDADE BASICA DE SAUDE JOSE GRACIANO CORDEIRO FERREIRA", numeroPEC:"923	", versaoPEC:"5.4.21", importadoAtendente:6280, importadoPEC:866, invalidas:42 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UBS VEREADOR GILSON GABRIEL ROSA", numeroPEC:"922	", versaoPEC:"5.4.21", importadoAtendente:1728, importadoPEC:1598, invalidas:58 },//dataenvio: 27/11/2025
-      { cidade:"FrancoDaRocha", unidade:"UNIDADE BASICA DE SAUDE AFONSO NOBRE BAIA", numeroPEC:"921	", versaoPEC:"5.4.21", importadoAtendente:6301, importadoPEC:5244, invalidas:20 },//dataenvio: 27/11/2025
-      //Macaiba
-      { cidade:"Macaiba", unidade:"E S F MANGABEIRA II", numeroPEC:"957	", versaoPEC:"5.4.21", importadoAtendente:2876, importadoPEC:2792, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F DE GUARAPES", numeroPEC:"955	", versaoPEC:"5.4.21", importadoAtendente:856, importadoPEC:806, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAMPESTRE", numeroPEC:"954	", versaoPEC:"5.4.21", importadoAtendente:1613, importadoPEC:1488, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAMPO DAS MANGUEIRAS", numeroPEC:"953	", versaoPEC:"5.4.21", importadoAtendente:1044, importadoPEC:948, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F FERREIRO TORTO", numeroPEC:"952	", versaoPEC:"5.4.21", importadoAtendente:1583, importadoPEC:1533, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F LAGOA DOS CAVALOS", numeroPEC:"949	", versaoPEC:"5.4.21", importadoAtendente:1503, importadoPEC:1379, invalidas:14 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F TRAIRAS", numeroPEC:"948	", versaoPEC:"5.4.21", importadoAtendente:2061, importadoPEC:2038, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"VILA SAO JOSE II", numeroPEC:"947	", versaoPEC:"5.4.21", importadoAtendente:2318, importadoPEC:2130, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAMPO SANTO", numeroPEC:"946	", versaoPEC:"5.4.21", importadoAtendente:780, importadoPEC:720, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F AS MARIAS", numeroPEC:"945	", versaoPEC:"5.4.21", importadoAtendente:1962, importadoPEC:2018, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F VILA SAO JOSE", numeroPEC:"944	", versaoPEC:"5.4.21", importadoAtendente:2390, importadoPEC:2115, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F RIACHO DO SANGUE", numeroPEC:"932	", versaoPEC:"5.4.21", importadoAtendente:2909, importadoPEC:2839, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F MANGABEIRAA", numeroPEC:"931	", versaoPEC:"5.4.21", importadoAtendente:1585, importadoPEC:1561, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F DE CAPOEIRAS", numeroPEC:"930	", versaoPEC:"5.4.21", importadoAtendente:461, importadoPEC:456, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F POTENGI", numeroPEC:"929	", versaoPEC:"5.4.21", importadoAtendente:2732, importadoPEC:2555, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F LAGOA DO SITIO", numeroPEC:"928	", versaoPEC:"5.4.21", importadoAtendente:2497, importadoPEC:2356, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F LUIZ ANTONIO DA FONSECA", numeroPEC:"927	", versaoPEC:"5.4.21", importadoAtendente:1345, importadoPEC:1221, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F TAPARA", numeroPEC:"926	", versaoPEC:"5.4.21", importadoAtendente:1838, importadoPEC:1672, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAJAZEIRAS", numeroPEC:"925	", versaoPEC:"5.4.21", importadoAtendente:1582, importadoPEC:1485, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAMPINAS", numeroPEC:"924	", versaoPEC:"5.4.21", importadoAtendente:2720, importadoPEC:2591, invalidas:10 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F JOSE COELHO", numeroPEC:"923	", versaoPEC:"5.4.21", importadoAtendente:2088, importadoPEC:1953, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F ELOI DE SOUZA", numeroPEC:"922	", versaoPEC:"5.4.21", importadoAtendente:1348, importadoPEC:1259, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F VILAR", numeroPEC:"920	", versaoPEC:"5.4.21", importadoAtendente:2119, importadoPEC:2067, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F LOTEAMENTO ESPERANCA", numeroPEC:"919	", versaoPEC:"5.4.21", importadoAtendente:1450, importadoPEC:1395, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F MORADA DA FE", numeroPEC:"918	", versaoPEC:"5.4.21", importadoAtendente:4555, importadoPEC:4146, invalidas:8 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CANA BRAVA", numeroPEC:"917	", versaoPEC:"5.4.21", importadoAtendente:3650, importadoPEC:3546, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F CAMPO DA SANTA CRUZ", numeroPEC:"916	", versaoPEC:"5.4.21", importadoAtendente:799, importadoPEC:746, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Macaiba", unidade:"E S F BELA VISTA", numeroPEC:"915	", versaoPEC:"5.4.21", importadoAtendente:4214, importadoPEC:3889, invalidas:4 },//dataenvio: 27/11/2025
-      //SantaRita
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF VIDAL DE NEGREIROS", numeroPEC:"2325	", versaoPEC:"5.4.21", importadoAtendente:3425, importadoPEC:3166, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF USINA SAO JOAO", numeroPEC:"2324	", versaoPEC:"5.4.21", importadoAtendente:771, importadoPEC:767, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF PREFEITO DR OILDO SOARES", numeroPEC:"2323	", versaoPEC:"5.4.21", importadoAtendente:3482, importadoPEC:3135, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF PEDRO CICERO BENICIO", numeroPEC:"2322	", versaoPEC:"5.4.21", importadoAtendente:2679, importadoPEC:2560, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF PADRE PAULO KOELLEN", numeroPEC:"2321	", versaoPEC:"5.4.21", importadoAtendente:4459, importadoPEC:4260, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF PADRE MALAGRIDA I", numeroPEC:"2320	", versaoPEC:"5.4.21", importadoAtendente:2877, importadoPEC:2824, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF ODON LEITE", numeroPEC:"2319	", versaoPEC:"5.4.21", importadoAtendente:2972, importadoPEC:2892, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF MIRIRI", numeroPEC:"2318	", versaoPEC:"5.4.21", importadoAtendente:1339, importadoPEC:1249, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF MAURICE VAN WOENSEL", numeroPEC:"2317	", versaoPEC:"5.4.21", importadoAtendente:1007, importadoPEC:990, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF MARIA DE LOURDES ALVES DE ASSIS", numeroPEC:"2316	", versaoPEC:"5.4.21", importadoAtendente:2958, importadoPEC:2797, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF MARCOS MOURA III", numeroPEC:"2315	", versaoPEC:"5.4.21", importadoAtendente:1138, importadoPEC:1084, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF MARCOS MOURA II", numeroPEC:"2314	", versaoPEC:"5.4.21", importadoAtendente:4760, importadoPEC:4365, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF LIVRAMENTO", numeroPEC:"2313	", versaoPEC:"5.4.21", importadoAtendente:2997, importadoPEC:2862, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF LEROLANDIA", numeroPEC:"2312	", versaoPEC:"5.4.21", importadoAtendente:4042	, importadoPEC:3651, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF JOSE VICENTE DE PONTES", numeroPEC:"2311	", versaoPEC:"5.4.21", importadoAtendente:2167, importadoPEC:1912, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF JOSE ALVES VIEIRA", numeroPEC:"2310	", versaoPEC:"5.4.21", importadoAtendente:3607, importadoPEC:3324, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF JOSE ALVES DE MELO", numeroPEC:"2309	", versaoPEC:"5.4.21", importadoAtendente:2000, importadoPEC:1897, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF JOAQUIM FRANCISCO DE SOUZA", numeroPEC:"2308		", versaoPEC:"5.4.21", importadoAtendente:949	, importadoPEC:870, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF JOAO BATISTA DO NASCIMENTO", numeroPEC:"2307	", versaoPEC:"5.4.21", importadoAtendente:4189	, importadoPEC:4090, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF IZABEL SERRANO DA SILVA", numeroPEC:"2306	", versaoPEC:"5.4.21", importadoAtendente:2181, importadoPEC:2092, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF IRMA CACILDA", numeroPEC:"2305	", versaoPEC:"5.4.21", importadoAtendente:4305	, importadoPEC:4015, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF HEITEL SANTIAGO", numeroPEC:"2304		", versaoPEC:"5.4.21", importadoAtendente:3241, importadoPEC:3056, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FRANCISCA PANTA	", numeroPEC:"2303	", versaoPEC:"5.4.21", importadoAtendente:5672, importadoPEC:5449, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FRANCISCA MORAIS DE QUEIROGA", numeroPEC:"2302	", versaoPEC:"5.4.21", importadoAtendente:1812, importadoPEC:1672, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FRANCISCA LIRA DE CARVALHO", numeroPEC:"2301	", versaoPEC:"5.4.21", importadoAtendente:3431, importadoPEC:3183, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FORTE VELHORIBEIRA", numeroPEC:"2300", versaoPEC:"5.4.21", importadoAtendente:1429, importadoPEC:1369, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FLAVIO MAROJA", numeroPEC:"2299	", versaoPEC:"5.4.21", importadoAtendente:1082, importadoPEC:1002, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF FARM ANTONIO AZEVEDO", numeroPEC:"2298	", versaoPEC:"5.4.21", importadoAtendente:3872, importadoPEC:3693, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF ENF MARCIA VALERIA RODRIGUES", numeroPEC:"2297		", versaoPEC:"5.4.21", importadoAtendente:2747	, importadoPEC:2609, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF DR TEIXEIRA DE VASCONCELOS", numeroPEC:"2296	", versaoPEC:"5.4.21", importadoAtendente:3881, importadoPEC:3848, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF DR ROMEU DE AZEVEDO MENEZES", numeroPEC:"2295	", versaoPEC:"5.4.21", importadoAtendente:3849	, importadoPEC:3563, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF DR DORIVALDO PEREIRA DA SILVA", numeroPEC:"2294	", versaoPEC:"5.4.21", importadoAtendente:3392, importadoPEC:3287, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF DR CARLOS ANTONIO", numeroPEC:"2293	", versaoPEC:"5.4.21", importadoAtendente:2148, importadoPEC:2047, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF DONA ZUZA ALVINO", numeroPEC:"2292	", versaoPEC:"5.4.21", importadoAtendente:3103, importadoPEC:2844, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF CELIA SANTIAGO", numeroPEC:"2291	", versaoPEC:"5.4.21", importadoAtendente:6541, importadoPEC:6222, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF CELESTE RIBEIRO", numeroPEC:"2290	", versaoPEC:"5.4.21", importadoAtendente:4956, importadoPEC:4662, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF CARMEM LUCIA FIRMINO DA SILVA", numeroPEC:"2289	", versaoPEC:"5.4.21", importadoAtendente:2732, importadoPEC:2300, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF BEBELANDIA", numeroPEC:"2288", versaoPEC:"5.4.21", importadoAtendente:1884, importadoPEC:1801, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF BARAO DO ABIAY", numeroPEC:"2287	", versaoPEC:"5.4.21", importadoAtendente:893, importadoPEC:856, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF ANA VIRGINIA", numeroPEC:"2286	", versaoPEC:"5.4.21", importadoAtendente:4300, importadoPEC:4130, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"SantaRita", unidade:"UNIDADE DE PSF ALDENY MONTENEGRO", numeroPEC:"2285", versaoPEC:"5.4.21", importadoAtendente:1758, importadoPEC:1708, invalidas:0 },//dataenvio: 27/00/2025
-      //Valença
-      { cidade:"Valença", unidade:"ESF SAO FRANCISCO", numeroPEC:"1560	", versaoPEC:"5.4.21", importadoAtendente:1723, importadoPEC:1689, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" UBS CHACRINHA", numeroPEC:"1550	", versaoPEC:"5.4.21", importadoAtendente:1146, importadoPEC:1137, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF OSORIO", numeroPEC:"1530	", versaoPEC:"5.4.21", importadoAtendente:3623, importadoPEC:3547, invalidas:73 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF SANTA ISABEL", numeroPEC:"1528	", versaoPEC:"5.4.21", importadoAtendente:2872, importadoPEC:2826, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF BIQUINHA", numeroPEC:"1519	", versaoPEC:"5.4.21", importadoAtendente:2003, importadoPEC:1969, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF PENTAGNA", numeroPEC:"1518	", versaoPEC:"5.4.21", importadoAtendente:1469, importadoPEC:1434, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" UBS LARANJEIRAS", numeroPEC:"1493	", versaoPEC:"5.4.21", importadoAtendente:2266, importadoPEC:2116, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF BARROSO", numeroPEC:"1491	", versaoPEC:"5.4.21", importadoAtendente:3947, importadoPEC:3627, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF BAIRRO DE FATIMA", numeroPEC:"1490	", versaoPEC:"5.4.21", importadoAtendente:4157, importadoPEC:4050, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" UBS PASSAGEM", numeroPEC:"1489", versaoPEC:"5.4.21", importadoAtendente:204, importadoPEC:203, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF JUPARANA CENTRO", numeroPEC:"1463	", versaoPEC:"5.4.21", importadoAtendente:2050, importadoPEC:2032, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF SAO JOSE DAS PALMEIRAS", numeroPEC:"1459	", versaoPEC:"5.4.21", importadoAtendente:4096, importadoPEC:2414, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF HILDEBRANDO LOPES", numeroPEC:"1458	", versaoPEC:"5.4.21", importadoAtendente:2432, importadoPEC:1956, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:"ESF PARQUE PENTAGNA", numeroPEC:"1457	", versaoPEC:"5.4.21", importadoAtendente:5750	, importadoPEC:5487, invalidas:8 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:"ESF JARDIM VALENCA", numeroPEC:"1441		", versaoPEC:"5.4.21", importadoAtendente:6016, importadoPEC:5689, invalidas:5 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF CENTRO", numeroPEC:"1440	", versaoPEC:"5.4.21", importadoAtendente:3020, importadoPEC:2863, invalidas:9 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:"ESF JOAO BONITO", numeroPEC:"1439		", versaoPEC:"5.4.21", importadoAtendente:6002, importadoPEC:5912, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF JOAO DIAS", numeroPEC:"1438	", versaoPEC:"5.4.21", importadoAtendente:2244, importadoPEC:2171, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" UBS QUIRINO", numeroPEC:"1437	", versaoPEC:"5.4.21", importadoAtendente:1274, importadoPEC:1161, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF PARAPEUNA", numeroPEC:"1436	", versaoPEC:"5.4.21", importadoAtendente:3102, importadoPEC:3013, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF CONSERVATORIA", numeroPEC:"1435	", versaoPEC:"5.4.21", importadoAtendente:5043, importadoPEC:4844, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF CAMBOTA", numeroPEC:"1434	", versaoPEC:"5.4.21", importadoAtendente:7220, importadoPEC:7078, invalidas:2 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF JUPARANA", numeroPEC:"1433	", versaoPEC:"5.4.21", importadoAtendente:2594, importadoPEC:2569, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF VARGINHA", numeroPEC:"1432	", versaoPEC:"5.4.21", importadoAtendente:7802	, importadoPEC:7645, invalidas:6 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" UBS CANTEIRO", numeroPEC:"1431	", versaoPEC:"5.4.21", importadoAtendente:1715, importadoPEC:1698, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Valença", unidade:" ESF SPALLA II", numeroPEC:"1422	", versaoPEC:"5.4.21", importadoAtendente:3552, importadoPEC:3353, invalidas:4 },//dataenvio: 27/11/2025
-      //Viçosa
-      { cidade:"Viçosa", unidade:"DIVISAO DE SAUDE", numeroPEC:"768	", versaoPEC:"5.4.21", importadoAtendente:1, importadoPEC:1, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"CISMIV", numeroPEC:"767	", versaoPEC:"5.4.21", importadoAtendente:2, importadoPEC:2, invalidas:0 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"POLICLINICA DE VICOSA", numeroPEC:"676	", versaoPEC:"5.4.21", importadoAtendente:1527, importadoPEC:1490, invalidas:5 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SAO JOSE DO TRIUNFO", numeroPEC:"663	", versaoPEC:"5.4.21", importadoAtendente:3741, importadoPEC:3554, invalidas:18 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA AMORAS", numeroPEC:"635	", versaoPEC:"5.4.21", importadoAtendente:4340, importadoPEC:4279, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA NOVA VICOSA POSSES", numeroPEC:"616	", versaoPEC:"5.4.21", importadoAtendente:8471, importadoPEC:8353, invalidas:3 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA STA CLARA BETANIA JK M EUGENIA", numeroPEC:"613	", versaoPEC:"5.4.21", importadoAtendente:10562, importadoPEC:10410, invalidas:11 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA NOVA ERA INACIO MARTINS", numeroPEC:"605	", versaoPEC:"5.4.21", importadoAtendente:4101, importadoPEC:5422, invalidas:19 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA NOVO SILVESTRE", numeroPEC:"590	", versaoPEC:"5.4.21", importadoAtendente:3005, importadoPEC:2866, invalidas:16 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SANTO ANTONIO", numeroPEC:"529	", versaoPEC:"5.4.21", importadoAtendente:5225, importadoPEC:5057, invalidas:20 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA BOM JESUS", numeroPEC:"528	", versaoPEC:"5.4.21", importadoAtendente:8890, importadoPEC:8376, invalidas:22 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SANTO ANTONIO II", numeroPEC:"526	", versaoPEC:"5.4.21", importadoAtendente:6041, importadoPEC:5879, invalidas:28	 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA FRANCISCO DE PAULA OLIVEIRA", numeroPEC:"525	", versaoPEC:"5.4.21", importadoAtendente:3158, importadoPEC:3090, invalidas:73 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SILVESTRE", numeroPEC:"524	", versaoPEC:"5.4.21", importadoAtendente:3866, importadoPEC:3806, invalidas:10 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA JOAO BRAS", numeroPEC:"523	", versaoPEC:"5.4.21", importadoAtendente:3517, importadoPEC:3296, invalidas:4 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SAO SEBASTIAO UNIAO VALE DO SOL", numeroPEC:"522	", versaoPEC:"5.4.21", importadoAtendente:2276, importadoPEC:2235, invalidas:1 },//dataenvio: 27/11/2025
-      { cidade:"Viçosa", unidade:"UNIDADE SAUDE DA FAMILIA SAO JOSE CIDADE NOVA BARRINHA", numeroPEC:"521	", versaoPEC:"5.4.21", importadoAtendente:7747, importadoPEC:7133, invalidas:32 },//dataenvio: 27/11/2025
-
-
+    const citiesData = [
+      { city: "Agua preta", date: "01/11", time: "08:08", total: 654, change: 0 },
+      { city: "Alhandra", date: "01/11", time: "13:25", total: 4, change: -306 },
+      { city: "Alto Do Rodrigues", date: "01/11", time: "13:37", total: 28, change: -18 },
+      { city: "Apodi", date: "01/11", time: "13:37", total: 0, change: -254 },
+      { city: "Araponga", date: "01/11", time: "13:37", total: 242, change: 0 },
+      { city: "Areia", date: "01/11", time: "13:37", total: 160, change: -26 },
+      { city: "Assu", date: "01/11", time: "13:37", total: 376, change: -57},
+      { city: "Brumado", date: "01/11", time: "13:37", total: 677, change: -108 },
+      { city: "Caapora", date: "01/11", time: "13:37", total: 3090, change: 0 },
+      { city: "Caldas Brandao", date: "01/11", time: "13:37", total: 30, change: -6 },
+      { city: "Canaa", date: "01/11", time: "13:37", total: 14, change: 0 },
+      { city: "Conde", date: "01/11", time: "13:34", total: 419, change: -61 },
+      { city: "Cordeiro", date: "01/11", time: "13:37", total: 144, change: -39 },
+      { city: "Franco Da Rocha", date: "01/11", time: "13:37", total: 2811, change: -154},
+      { city: "Itabaiana", date: "01/11", time: "13:37", total: 149, change: -18 },
+      { city: "Itapororoca", date: "01/11", time: "13:37", total: 308, change:-61 },
+      { city: "Itatuba", date: "01/11", time: "13:37", total: 95, change: 0 },
+      { city: "Macaiba", date: "01/11", time: "13:37", total: 1117, change: +28 },
+      { city: "Miguel do Anta", date: "01/11", time: "13:37", total: 72, change: 0 },
+      { city: "Mogeiro", date: "01/11", time: "13:37", total: 50, change: -14 },
+      { city: "Patu", date: "01/11", time: "13:37", total: 193, change: -12 },
+      { city: "Paula Candido", date: "01/11", time: "13:37", total: 42, change: -6 },
+      { city: "Pedro Avelino", date: "01/11", time: "13:37", total: 48, change: +-13 },
+      { city: "Pendencias", date: "01/11", time: "13:37", total: 187, change: -42 },
+      { city: "Poco Branco", date: "01/11", time: "13:37", total: 30, change: 0 },
+      { city: "Porto Do Mangue", date: "01/11", time: "13:37", total: 348, change: 0 },
+      { city: "Santa Rita", date: "01/11", time: "13:37", total: 2963, change: -286 },
+      { city: "Sao Jose De Uba", date: "01/11", time: "13:37", total: 30, change: -2 },
+      { city: "Tibau", date: "01/11", time: "13:37", total: 96, change: -8 },
+      { city: "Valenca", date: "01/11", time: "13:37", total: 625, change: -12 },
+      { city: "Vicosa", date: "01/11", time: "13:37", total: 1897, change: -67 }
     ];
-  }
 
-  // ---------- Persistência ----------
-  function save(){
-    try{ localStorage.setItem("novetech_lotes_units_v31", JSON.stringify(datasetUnidades)); }catch(e){}
-  }
-  function restore(){
-    try{
-      const raw = localStorage.getItem("novetech_lotes_units_v31");
-      if (raw){ datasetUnidades = JSON.parse(raw); return true; }
-    }catch(e){}
-    return false;
-  }
+     const graficos = [ //attualizado
+  { id: 'aguapretaChart', title: 'Agua Preta', data: [646,646,650,650,650,650,650,652,654,654,654,654,654,654,654,654,654,654,654], color: '#1E90FF' },
+  { id: 'alhandraChart', title: 'Alhandra', data: [76,90,103,98,102,92,108,101,16,62,97,76,214,10,32,64,28,310,4], color: '#FF1493' },
+  { id: 'altodorodriguesChart', title: 'Alto do Rodrigues', data: [70,76,72,62,52,54,56,46,40,40,34,40,38,44,28,18,18,46,28], color: '#FFD700' },
+  { id: 'apodiChart', title: 'Apodi', data: [466,476,486,486,492,502,508,506,502,507,499,502,494,472,2,2,6,254,0], color: '#DC143C' },
+  { id: 'arapongaChart', title: 'Araponga', data: [232,234,250,247,246,248,249,247,245,243,243,243,239,241,243,243,238,242,242], color: '#00CED1' },
+  { id: 'areiaChart', title: 'Areia', data: [308,312,314,315,326,315,313,331,325,325,329,355,339,333,128,94,92,186,160], color: '#00BFFF' },
+  { id: 'assuChart', title: 'Assu', data: [361,382,363,360,366,371,371,363,378,414,372,378,344,373,126,83,386,433,376], color: '#FF4500' },
+  { id: 'brumadoChart', title: 'Brumado', data: [4025,3874,3815,3755,3737,3732,3738,3727,3732,3718,3737,2515,2510,2522,118,82,785,677], color: '#1E90FF' },
+  { id: 'caaporaChart', title: 'Caapora', data: [3056,3049,3033,3036,3036,3069,3064,3052,3088,3088,3090,3090,3090,3090,3090,3090,3090,3090,3090], color: '#9932CC' },
+  { id: 'caldasbrandaoChart', title: 'Caldas Brandao', data: [38,38,42,42,40,42,42,44,44,42,44,36,38,34,18,16,4,36,30], color: '#20B2AA' },
+  { id: 'canaaChart', title: 'Canaa', data: [12,20,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14], color: '#8B008B' },
+  { id: 'condeChart', title: 'Conde', data: [434,523,591,601,619,637,638,634,630,634,638,663,681,701,178,151,115,480,419], color: '#FF8C00' },
+  { id: 'cordeiroChart', title: 'Cordeiro', data: [211,211,213,212,220,206,176,168,174,169,179,188,187,187,80,56,28,183,144], color: '#FF6347' },
+  { id: 'francodarochaChart', title: 'Franco da Rocha', data: [3504,3484,3497,3479,3471,3486,3503,3549,3552,3548,3577,3570,3612,3650,1296,743,621,2965,2811], color: '#2E8B57' },
+  { id: 'itabaianaChart', title: 'Itabaiana', data: [157,155,163,161,163,167,165,163,165,151,155,170,182,86,0,0,167,149], color: '#5F9EA0' },
+  { id: 'itapororocaChart', title: 'Itapororoca', data: [407,423,428,416,412,406,408,430,426,410,410,420,420,428,166,86,84,369,308], color: '#FF69B4' },
+  { id: 'itatubaChart', title: 'Itatuba', data: [122,123,123,139,137,120,126,124,120,117,117,121,121,121,26,8,5,95,95], color: '#FF7F50' },
+  { id: 'macaibaChart', title: 'Macaiba', data: [3020,3087,3095,3163,3185,3245,3279,3312,335,3360,3362,3376,3374,3418,1386,1262,1182,1089], color: '#8B0000' },
+  { id: 'migueldoantaChart', title: 'Miguel do Anta', data: [72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72,72], color: '#FF6347' },
+  { id: 'mogeiroChart', title: 'Mogeiro', data: [73,71,68,46,48,60,44,40,44,64,58,64,68,66,52,30,30,64,50], color: '#6A5ACD' },
+  { id: 'patuChart', title: 'Patu', data: [213,207,222,236,237,236,232,238,244,246,250,247,249,242,56,0,0,205,193], color: '#008080' },
+  { id: 'paulacandidoChart', title: 'Paula Candido', data: [66,68,68,68,68,58,58,52,52,54,52,48,52,56,24,18,18,48,42], color: '#A0522D' },
+  { id: 'pedroavelinoChart', title: 'Pedro Avelino', data: [115,113,85,83,81,83,71,75,65,61,65,75,74,76,71,26,16,61,48], color: '#20B2AA' },
+  { id: 'pendenciasChart', title: 'Pendencias', data: [232,232,226,228,239,237,247,245,247,247,255,247,253,251,179,130,100,229,187], color: '#2F4F4F' },
+  { id: 'pocobrancoChart', title: 'Poco Branco', data: [162,104,120,144,166,187,247,241,208,188,179,174,172,176,24,22,20,30,30], color: '#BA55D3' },
+  { id: 'portodomangueChart', title: 'Porto do Mangue', data: [348,348,348,348,348,348,348,348,348,348,348,348,348,348,348,348,348,348,348], color: '#00BFFF' },
+  { id: 'santaritaChart', title: 'Santa Rita', data: [3856,3829,3813,3871,3897,3905,3880,3913,3930,3948,3990,4014,4046,4032,40,42,74,3249,2963], color: '#FF1493' },
+  { id: 'saojosedaubaChart', title: 'Sao Jose de Uba', data: [36,34,36,36,36,34,34,32,32,34,34,34,34,34,26,6,6,32,32,30], color: '#228B22' },
+  { id: 'tibauChart', title: 'Tibau', data: [100,100,102,102,102,110,110,116,112,110,108,104,104,110,110,110,110,104,96], color: '#4682B4' },
+  { id: 'valencaChart', title: 'Valenca', data: [446,462,470,488,512,538,534,534,535,562,586,608,624,632,24,431,637,625], color: '#FF8C00' },
+  { id: 'vicosaChart', title: 'Vicosa', data: [2646,2651,2665,2667,2653,2653,2475,2458,2353,2291,2293,2303,2294,2284,689,64,2045,1964,1897], color: '#9932CC' }
 
-  // ---------- Transformação & Filtro ----------
-  function aggregateByCityFromUnits(units){
-    const groups = new Map();
-    for (const u of units){
-      if (!u || !u.cidade) continue;
-      const key = onlyCityName(u.cidade);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(u);
-    }
-    const result = [];
-    for (const [city, items] of groups){
-      const importadoAtendente = items.reduce((a,b)=> a + (b.importadoAtendente||0), 0);
-      const importadoPEC = items.reduce((a,b)=> a + (b.importadoPEC||0), 0);
-      const invalidas = items.reduce((a,b)=> a + (b.invalidas||0), 0);
-      const numeroPEC = modeOrMulti(items.map(i => i.numeroPEC));
-      const versaoPEC = modeOrMulti(items.map(i => i.versaoPEC));
-      const status = computeStatus({ importadoAtendente, importadoPEC, invalidas });
-      result.push({ cidade: city, numeroPEC, versaoPEC, importadoAtendente, importadoPEC, invalidas, status, unidades: items });
-    }
-    return result;
-  }
+];
 
-  function getFilteredUnits(){
-    const q = normalize(dom.search.value);
-    const cSel = dom.cidadeSel.value;
-    const vSel = dom.versaoSel.value;
-    const sSel = dom.statusSel.value;
+    const container = document.getElementById("cidades");
+    citiesData.forEach(({ city, date, time, total, change }) => {
+      const card = document.createElement("div");
+      card.className = "city-card";
+      let changeClass = "gray";
+      if (change > 0) changeClass = "red";
+      else if (change < 0) changeClass = "green";
 
-    return datasetUnidades.filter(u => {
-      const matchesQ = !q || normalize(u.cidade + " " + u.unidade + " " + u.numeroPEC + " " + u.versaoPEC).includes(q);
-      const matchesC = !cSel || onlyCityName(u.cidade) === cSel;
-      const matchesV = !vSel || u.versaoPEC === vSel;
-      const st = computeStatus(u);
-      const matchesS = !sSel || st === sSel;
-      return matchesQ && matchesC && matchesV && matchesS;
-    });
-  }
-
-  // ---------- UI Helpers ----------
-  function sortBy(key){
-    if (sortState.key === key){ sortState.dir = (sortState.dir === "asc" ? "desc" : "asc"); }
-    else { sortState.key = key; sortState.dir = "asc"; }
-    render();
-  }
-  function sortData(arr){
-    const { key, dir } = sortState;
-    const mul = dir === "asc" ? 1 : -1;
-    arr.sort((a,b) => {
-      const va = a[key], vb = b[key];
-      const na = typeof va === "number", nb = typeof vb === "number";
-      if (na && nb) return (va - vb) * mul;
-      return String(va).localeCompare(String(vb), "pt-BR", { numeric: true }) * mul;
-    });
-  }
-  function updateFiltersOptions(){
-    // Preserva seleção atual ao repovoar as opções
-    const prevCidade = dom.cidadeSel.value;
-    const prevVersao = dom.versaoSel.value;
-
-    const cidades = [...new Set(datasetUnidades.map(x => onlyCityName(x.cidade)))].sort((a,b) => a.localeCompare(b, "pt-BR"));
-    const versoes = [...new Set(datasetUnidades.map(x => x.versaoPEC))].filter(Boolean).sort((a,b) => a.localeCompare(b, "pt-BR", { numeric: true }));
-
-    dom.cidadeSel.innerHTML = '<option value="">Todas</option>' + cidades.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-    dom.versaoSel.innerHTML = '<option value="">Todas</option>' + versoes.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
-
-    // Restaura seleção se ainda existir
-    if ([...dom.cidadeSel.options].some(o => o.value === prevCidade)) dom.cidadeSel.value = prevCidade;
-    if ([...dom.versaoSel.options].some(o => o.value === prevVersao)) dom.versaoSel.value = prevVersao;
-  }
-
-  function applyFilters(){
-    const limit = parseInt(dom.limiteSel.value, 10) || 1000;
-    const units = getFilteredUnits(); // <- recorte atual
-    cidadesAgg = aggregateByCityFromUnits(datasetUnidades); // base completa
-    const citiesAggFiltered = aggregateByCityFromUnits(units); // recorte para tabela
-
-    const sSel = dom.statusSel.value;
-    filtered = citiesAggFiltered.filter(r => !sSel || r.status === sSel);
-
-    sortData(filtered);
-    if (filtered.length > limit) filtered = filtered.slice(0, limit);
-
-    return { units, citiesAggFiltered };
-  }
-
-  function highlightSortHeaders(){
-    $$("#lotesTable thead th").forEach(th => {
-      const key = th.getAttribute("data-key");
-      const state = (key === sortState.key) ? sortState.dir : "none";
-      th.setAttribute("aria-sort", state);
-      th.style.color = (key === sortState.key) ? "#fff" : "var(--muted)";
-    });
-  }
-
-  function unitRow(u){
-    const st = computeStatus(u);
-    const stCls = st === "OK" ? "ok" : (st === "Alerta" ? "alerta" : "critico");
-    return `<tr>
-      <td>${escapeHtml(u.unidade)}</td>
-      <td class="mono nowrap">${escapeHtml(u.numeroPEC || "")}</td>
-      <td class="nowrap">${escapeHtml(u.versaoPEC || "")}</td>
-      <td class="right mono nowrap">${formatInt(u.importadoAtendente)}</td>
-      <td class="right mono nowrap">${formatInt(u.importadoPEC)}</td>
-      <td class="right mono nowrap">${formatInt(u.invalidas)}</td>
-      <td><span class="status ${stCls}"><i class="dot"></i>${st}</span></td>
-    </tr>`;
-  }
-
-  function renderTable(){
-    if (!filtered.length){
-      dom.tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--muted); padding: 28px">Nenhuma cidade para exibir.</td></tr>`;
-      dom.footCount.textContent = "0";
-      return;
-    }
-    const rows = [];
-    for (const r of filtered){
-      const cls = r.status === "OK" ? "ok" : (r.status === "Alerta" ? "alerta" : "critico");
-      const isExpanded = expanded.has(r.cidade);
-      rows.push(`<tr class="${isExpanded?'expanded':''}" data-row="cidade" data-cidade="${escapeHtml(r.cidade)}" tabindex="0" role="button" aria-expanded="${isExpanded?'true':'false'}">
-        <td>
-          <span class="row-toggle">
-            <span class="caret" aria-hidden="true">▸</span>
-            <strong>${escapeHtml(r.cidade)}</strong>
-          </span>
-        </td>
-        <td class="mono nowrap">${escapeHtml(r.numeroPEC || "")}</td>
-        <td class="nowrap">${escapeHtml(r.versaoPEC || "")}</td>
-        <td class="right mono nowrap">${formatInt(r.importadoAtendente)}</td>
-        <td class="right mono nowrap">${formatInt(r.importadoPEC)}</td>
-        <td class="right mono nowrap">${formatInt(r.invalidas)}</td>
-        <td><span class="status ${cls}"><i class="dot"></i>${r.status}</span></td>
-      </tr>`);
-
-      const unidades = (r.unidades || []).slice();
-      const unitsHtml = unidades.length ? unidades.map(unitRow).join("") : `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:10px">Sem unidades para exibir.</td></tr>`;
-      rows.push(`<tr class="details" data-details="${escapeHtml(r.cidade)}" style="${isExpanded?'':'display:none'}">
-        <td colspan="7">
-          <div class="units">
-            <header>
-              <div class="badge">Unidades em <strong>${escapeHtml(r.cidade)}</strong></div>
-              <div class="badge">Total unidades: ${formatInt(unidades.length)}</div>
-            </header>
-            <table>
-              <thead>
-                <tr>
-                  <th>Unidade</th>
-                  <th class="nowrap">Nº do PEC</th>
-                  <th>Versão PEC</th>
-                  <th class="right nowrap">Importado p/ Atendente</th>
-                  <th class="right nowrap">Importado p/ PEC</th>
-                  <th class="right nowrap">Fichas inválidas</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${unitsHtml}
-              </tbody>
-            </table>
-          </div>
-        </td>
-      </tr>`);
-    }
-    dom.tbody.innerHTML = rows.join("");
-    dom.footCount.textContent = String(filtered.length);
-  }
-
-  function updateKpis(currentUnits){
-    const units = currentUnits || datasetUnidades;
-    const totalAt = units.reduce((a,b)=> a + (b.importadoAtendente||0), 0);
-    const totalPec = units.reduce((a,b)=> a + (b.importadoPEC||0), 0);
-    const totalInv = units.reduce((a,b)=> a + (b.invalidas||0), 0);
-    const cidades = new Set(units.map(r => onlyCityName(r.cidade))).size;
-    const unidades = units.length;
-    const taxaInv = totalAt > 0 ? totalInv / totalAt : 0;
-    dom.kpiCidades.textContent = (cidades||0).toLocaleString("pt-BR");
-    dom.kpiUnidades.textContent = (unidades||0).toLocaleString("pt-BR");
-    dom.kpiAtendente.textContent = (totalAt||0).toLocaleString("pt-BR");
-    dom.kpiPec.textContent = (totalPec||0).toLocaleString("pt-BR");
-    dom.kpiInvalidas.textContent = (totalInv||0).toLocaleString("pt-BR");
-    dom.kpiTaxa.textContent = "Taxa inválidas: " + pct(taxaInv);
-    const sucesso = totalAt > 0 ? totalPec / totalAt : 0;
-    dom.progAt.style.width = "100%";
-    dom.progPec.style.width = Math.max(0, Math.min(1, sucesso)) * 100 + "%";
-  }
-
-  function render(){
-    updateFiltersOptions();                       // <- mantém seleção
-    const { units } = applyFilters();             // <- recorte atual para tabela e KPIs
-    updateKpis(units);
-    renderTable();
-    highlightSortHeaders();
-    save();
-  }
-
-  function toast(msg){
-    const t = document.createElement("div");
-    t.textContent = msg;
-    t.style.position = "fixed";
-    t.style.left = "50%";
-    t.style.bottom = "24px";
-    t.style.transform = "translateX(-50%)";
-    t.style.background = "rgba(20,165,255,.12)";
-    t.style.border = "1px solid rgba(56,182,255,.35)";
-    t.style.padding = "10px 14px";
-    t.style.borderRadius = "999px";
-    t.style.color = "var(--text)";
-    t.style.fontWeight = "600";
-    t.style.boxShadow = "var(--shadow-soft)";
-    t.style.zIndex = "9999";
-    document.body.appendChild(t);
-    setTimeout(()=>{ t.style.opacity = "0"; t.style.transition = "opacity .5s"; }, 1800);
-    setTimeout(()=> t.remove(), 2400);
-  }
-
-  function tickClock(){
-    const now = new Date();
-    const s = now.toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" });
-    dom.clock.textContent = s;
-  }
-
-  // ---------- Importação / Exportação ----------
-  function importCSV(text){
-    const rows = parseCSV(text);
-    if (!rows.length) return;
-    const headerRaw = rows[0];
-    const header = headerRaw.map(h => normalize(h));
-    const map = {};
-    const alias = {
-      cidade: "cidade",
-      unidade: "unidade",
-      numerodopecatual: "numeroPEC", numerodpecatual: "numeroPEC",
-      numerodopec: "numeroPEC", numeropec: "numeroPEC", numeropecatual: "numeroPEC", npec: "numeroPEC",
-      versaoatualdopec: "versaoPEC", versaodopec: "versaoPEC", versaopec: "versaoPEC", versaopecatual: "versaoPEC",
-      importadoparaatendentedesaude: "importadoAtendente", importadoatendente: "importadoAtendente",
-      importadoatendentedesaude: "importadoAtendente", importadoatend: "importadoAtendente",
-      importadoparaopec: "importadoPEC", importadopec: "importadoPEC",
-      fichasinvalidas: "invalidas", invalidas: "invalidas", fichasnaovalidadas: "invalidas"
-    };
-    header.forEach((h, i) => {
-      if (alias[h]) map[alias[h]] = i;
-      else if (h === "cidade") map["cidade"] = i;
-      else if (h === "unidade") map["unidade"] = i;
+      card.innerHTML = `
+        <h2>🏙️ ${city}</h2>
+        <p>📅 ${date} ⏰ ${time}</p>
+        <p>🔢 Total: <strong>${total}</strong></p>
+        <p>📈 Variação: <strong class="${changeClass}">${change > 0 ? '+' + change : change}</strong></p>
+      `;
+      container.appendChild(card);
     });
 
-    const hasUnidade = ("unidade" in map);
+    const graficosContainer = document.getElementById("graficos");
+    const labels = ["14/07","14/07","21/07","18/08","26/08","01/09","08/09","15/09","21/09","29/09","05/10","13/10","20/10","27/10","03/11","09/11","17/11","24/11","01/11"];
 
-    const data = [];
-    for (let r = 1; r < rows.length; r++){
-      const row = rows[r];
-      if (!row || !row.length) continue;
-      if (hasUnidade){
-        const item = {
-          cidade: onlyCityName(String(row[map.cidade] || "").trim()),
-          unidade: String(row[map.unidade] || "").trim(),
-          numeroPEC: String(row[map.numeroPEC] || "").trim(),
-          versaoPEC: String(row[map.versaoPEC] || "").trim(),
-          importadoAtendente: toInt(row[map.importadoAtendente]),
-          importadoPEC: toInt(row[map.importadoPEC]),
-          invalidas: toInt(row[map.invalidas])
-        };
-        if (item.cidade && item.unidade) data.push(item);
-      } else {
-        const item = {
-          cidade: onlyCityName(String(row[map.cidade] || "").trim()),
-          unidade: "Geral",
-          numeroPEC: String(row[map.numeroPEC] || "").trim(),
-          versaoPEC: String(row[map.versaoPEC] || "").trim(),
-          importadoAtendente: toInt(row[map.importadoAtendente]),
-          importadoPEC: toInt(row[map.importadoPEC]),
-          invalidas: toInt(row[map.invalidas])
-        };
-        if (item.cidade) data.push(item);
-      }
-    }
+    graficos.forEach(({ id, title, data, color }) => {
+      const titleElement = document.createElement("h2");
+      titleElement.innerText = `📉 Gráfico de Acompanhamento - ${title.toUpperCase()}`;
 
-    if (!data.length){
-      alert("Nenhuma linha válida encontrada no CSV.");
-      return;
-    }
-    datasetUnidades = data;
-    expanded.clear();
-    render();
-    toast("CSV importado com sucesso (" + data.length + " linhas).");
-  }
+      const canvas = document.createElement("canvas");
+      canvas.id = id;
 
-  function exportCSV(){
-    const hasRealUnits = datasetUnidades.some(u => (u.unidade || "").toLowerCase() !== "geral");
-    if (hasRealUnits){
-      const header = "cidade,unidade,numero_pec_atual,versao_pec_atual,importado_atendente,importado_pec,fichas_invalidas\n";
-      const lines = datasetUnidades.map(r => [
-        r.cidade, r.unidade, r.numeroPEC, r.versaoPEC, r.importadoAtendente, r.importadoPEC, r.invalidas
-      ].map(v => {
-        const s = (v ?? "").toString();
-        return (s.includes(",") || s.includes(";") || s.includes('"')) ? '"' + s.replace(/"/g,'""') + '"' : s;
-      }).join(","));
-      downloadCsv(header + lines.join("\n"), "novetech-lotes-unidades.csv");
-    } else {
-      const agg = aggregateByCityFromUnits(datasetUnidades);
-      const header = "cidade,numero_pec_atual,versao_pec_atual,importado_atendente,importado_pec,fichas_invalidas\n";
-      const lines = agg.map(r => [
-        r.cidade, r.numeroPEC, r.versaoPEC, r.importadoAtendente, r.importadoPEC, r.invalidas
-      ].map(v => {
-        const s = (v ?? "").toString();
-        return (s.includes(",") || s.includes(";") || s.includes('"')) ? '"' + s.replace(/"/g,'""') + '"' : s;
-      }).join(","));
-      downloadCsv(header + lines.join("\n"), "novetech-lotes-cidades.csv");
-    }
-  }
-  function downloadCsv(csv, filename){
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
+      graficosContainer.appendChild(titleElement);
+      graficosContainer.appendChild(canvas);
 
-  // ---------- Eventos ----------
-  $("#lotesTable thead").addEventListener("click", (e) => {
-    const th = e.target.closest("th");
-    if (!th) return;
-    const key = th.getAttribute("data-key");
-    if (!key) return;
-    sortBy(key);
-  });
-
-  dom.search.addEventListener("input", render);
-  dom.cidadeSel.addEventListener("change", () => { expanded.clear(); render(); });
-  dom.versaoSel.addEventListener("change", () => { expanded.clear(); render(); });
-  dom.statusSel.addEventListener("change", () => { expanded.clear(); render(); });
-  dom.limiteSel.addEventListener("change", render);
-  dom.exportCsvBtn.addEventListener("click", exportCSV);
-  dom.resetBtn.addEventListener("click", () => {
-    loadExampleUnits();
-    expanded.clear();
-    render();
-    toast("Dados de exemplo por unidades restaurados.");
-  });
-
-  $("#lotesTable tbody").addEventListener("click", (e) => {
-    const row = e.target.closest('tr[data-row="cidade"]');
-    if (!row) return;
-    const city = row.getAttribute("data-cidade");
-    toggleExpand(city);
-  });
-  $("#lotesTable tbody").addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " "){
-      const row = e.target.closest('tr[data-row="cidade"]');
-      if (!row) return;
-      e.preventDefault();
-      const city = row.getAttribute("data-cidade");
-      toggleExpand(city);
-    }
-  });
-
-  function toggleExpand(city){
-    if (expanded.has(city)) expanded.delete(city);
-    else expanded.add(city);
-    const isExp = expanded.has(city);
-    const tr = $(`#lotesTable tbody tr[data-row="cidade"][data-cidade="${cssEscape(city)}"]`);
-    const details = $(`#lotesTable tbody tr.details[data-details="${cssEscape(city)}"]`);
-    if (tr){ tr.classList.toggle("expanded", isExp); tr.setAttribute("aria-expanded", isExp ? "true" : "false"); }
-    if (details){ details.style.display = isExp ? "" : "none"; }
-  }
-
-  function cssEscape(s){
-    return (s || "").toString().replace(/["\\]/g, "\\$&");
-  }
-
-  // ---------- Init ----------
-  function init(){
-    if (!restore()) loadExampleUnits();
-    render();
-    setInterval(tickClock, 1000); tickClock();
-  }
-
-  dom.file.addEventListener("change", async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const text = await file.text();
-    importCSV(text);
-    e.target.value = "";
-  });
-
-  init();
-})();
-</script>
+      const ctx = canvas.getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Duplicados",
+              data,
+              borderColor: color,
+              fill: false,
+              tension: 0.3,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                boxWidth: 12,
+                font: {
+                  size: 12
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 50
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
